@@ -11,6 +11,7 @@ const KEYS = {
     DOSES: 'ah_doses',
     APPOINTMENTS: 'ah_appointments',
     SUPPORT_LOG: 'ah_support_log',
+    DOCUMENTS: 'ah_documents',   // Patient medical documents
     SEEDED: 'ah_seeded',
 };
 
@@ -90,6 +91,15 @@ function seedDemoData() {
         { id: uuid(), caregiverId, patientId, note: 'Reminded Alex about evening Atorvastatin dose.', timestamp: new Date(today.getTime() - 172800000).toISOString() },
     ];
     setItem(KEYS.SUPPORT_LOG, supportLog);
+
+    // Demo patient documents
+    const docs = [
+        { id: uuid(), patientId, doctorId, name: 'Blood Sugar Report (Feb 2026)', type: 'lab_report', uploadDate: new Date(today.getTime() - 5 * 86400000).toISOString(), url: '#', notes: 'HbA1c: 7.2%, Fasting: 148 mg/dL' },
+        { id: uuid(), patientId, doctorId, name: 'Cardiac Discharge Summary', type: 'discharge_summary', uploadDate: new Date(today.getTime() - 15 * 86400000).toISOString(), url: '#', notes: 'Discharged after routine cardiac review. BP stable.' },
+        { id: uuid(), patientId, doctorId, name: 'Chest X-Ray (Jan 2026)', type: 'x_ray', uploadDate: new Date(today.getTime() - 30 * 86400000).toISOString(), url: '#', notes: 'No abnormalities detected.' },
+        { id: uuid(), patientId, doctorId, name: 'Lipid Panel Results', type: 'lab_report', uploadDate: new Date(today.getTime() - 45 * 86400000).toISOString(), url: '#', notes: 'LDL: 112 mg/dL, HDL: 48 mg/dL, Total: 195 mg/dL' },
+    ];
+    setItem(KEYS.DOCUMENTS, docs);
 
     localStorage.setItem(KEYS.SEEDED, 'true');
     console.log('[AfterHeal] Demo data seeded ✓');
@@ -332,6 +342,7 @@ window.AH = {
     requireAuth, logout, showToast, $, $$,
     populateSidebarUser, setTopbarDate,
     initSidebarToggle, initTabs, initLogout, initNavLinks,
+    showAlert, hideAlert,
 };
 
 // ── Auto-init based on page ───────────────────────────────
