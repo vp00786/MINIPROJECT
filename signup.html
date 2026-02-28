@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up – AfterHeal</title>
+    <meta name="description" content="Create your AfterHeal account as a Patient, Doctor, or Caregiver.">
+    <link rel="stylesheet" href="styles/global.css">
+    <link rel="stylesheet" href="styles/auth.css">
+</head>
+
+<body>
+    <div class="auth-page">
+        <!-- Brand Panel -->
+        <div class="auth-brand">
+            <div class="auth-brand-logo">
+                <div class="auth-brand-icon">🏥</div>
+                <div>
+                    <div class="auth-brand-name">AfterHeal</div>
+                    <div class="auth-brand-tagline">Patient Adherence System</div>
+                </div>
+            </div>
+            <div class="auth-brand-content">
+                <h2>Join the healthcare community</h2>
+                <p>Select your role and create an account to access your personalised dashboard in seconds.</p>
+                <div class="auth-features">
+                    <div class="auth-feature-item">
+                        <span class="feature-icon">💊</span>
+                        <span class="feature-text">Track medications and adherence in real time</span>
+                    </div>
+                    <div class="auth-feature-item">
+                        <span class="feature-icon">📅</span>
+                        <span class="feature-text">Manage appointments and treatment plans</span>
+                    </div>
+                    <div class="auth-feature-item">
+                        <span class="feature-icon">🔔</span>
+                        <span class="feature-text">Receive alerts and caregiver support logs</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Panel -->
+        <div class="auth-form-panel">
+            <div class="auth-form-card">
+                <h2>Create account</h2>
+                <p class="auth-subtitle">Already have an account? <a href="login.html" class="auth-link">Sign in</a></p>
+
+                <!-- Alert -->
+                <div class="alert" id="signup-alert" role="alert"></div>
+
+                <!-- Select Role -->
+                <div class="form-group">
+                    <label class="form-label">I am a…</label>
+                    <div class="role-selector">
+                        <input type="radio" name="role" id="role-patient" value="patient" class="role-option" checked>
+                        <label for="role-patient" class="role-label"><span class="role-icon">👤</span><span
+                                class="role-name">Patient</span></label>
+
+                        <input type="radio" name="role" id="role-doctor" value="doctor" class="role-option">
+                        <label for="role-doctor" class="role-label"><span class="role-icon">👨‍⚕️</span><span
+                                class="role-name">Doctor</span></label>
+
+                        <input type="radio" name="role" id="role-caregiver" value="caregiver" class="role-option">
+                        <label for="role-caregiver" class="role-label"><span class="role-icon">👩‍👧</span><span
+                                class="role-name">Caregiver</span></label>
+                    </div>
+                </div>
+
+                <form id="signup-form" novalidate>
+                    <!-- Full Name -->
+                    <div class="form-group">
+                        <label for="name" class="form-label">Full Name</label>
+                        <div class="input-icon-wrap">
+                            <span class="input-icon">👤</span>
+                            <input type="text" id="name" class="form-control" placeholder="John Doe" autocomplete="name"
+                                required>
+                        </div>
+                    </div>
+
+                    <!-- Email -->
+                    <div class="form-group">
+                        <label for="email" class="form-label">Email Address</label>
+                        <div class="input-icon-wrap">
+                            <span class="input-icon">✉️</span>
+                            <input type="email" id="email" class="form-control" placeholder="you@example.com"
+                                autocomplete="email" required>
+                        </div>
+                    </div>
+
+                    <!-- Password -->
+                    <div class="form-group">
+                        <label for="password" class="form-label">Password</label>
+                        <div class="password-wrap input-icon-wrap">
+                            <span class="input-icon">🔒</span>
+                            <input type="password" id="password" class="form-control" placeholder="Min 6 characters"
+                                autocomplete="new-password" required>
+                            <button type="button" class="password-toggle" id="toggle-pw"
+                                aria-label="Toggle password visibility">👁️</button>
+                        </div>
+                    </div>
+
+                    <!-- Confirm Password -->
+                    <div class="form-group">
+                        <label for="confirm-password" class="form-label">Confirm Password</label>
+                        <div class="password-wrap input-icon-wrap">
+                            <span class="input-icon">🔒</span>
+                            <input type="password" id="confirm-password" class="form-control"
+                                placeholder="Repeat password" autocomplete="new-password" required>
+                            <button type="button" class="password-toggle" id="toggle-cpw"
+                                aria-label="Toggle confirm password visibility">👁️</button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-full btn-lg" id="signup-btn">Create Account
+                        →</button>
+                </form>
+
+                <div class="auth-form-footer">
+                    <a href="index.html">← Back to Home</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="scripts/auth.js"></script>
+</body>
+
+</html>

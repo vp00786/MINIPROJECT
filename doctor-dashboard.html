@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Dashboard – AfterHeal</title>
+    <meta name="description" content="Manage patients, prescriptions, and monitor treatment adherence.">
+    <link rel="stylesheet" href="styles/global.css">
+    <link rel="stylesheet" href="styles/dashboard.css">
+</head>
+
+<body class="theme-doctor">
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <div class="dashboard-shell">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-logo">
+                <div class="sidebar-logo-icon theme-doctor">🏥</div>
+                <div>
+                    <div class="sidebar-logo-text">AfterHeal</div>
+                    <div class="sidebar-logo-sub">Doctor Portal</div>
+                </div>
+            </div>
+            <div class="sidebar-user">
+                <div class="sidebar-avatar" id="sidebar-avatar" style="background:var(--doctor-color)">D</div>
+                <div>
+                    <div class="sidebar-user-name" id="sidebar-user-name">Doctor</div>
+                    <div class="sidebar-user-role" id="sidebar-user-role">doctor</div>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-group-label">Management</div>
+                <button class="nav-link active" data-section="section-overview">
+                    <span class="nav-icon">🏠</span> Overview
+                </button>
+                <button class="nav-link" data-section="section-patients">
+                    <span class="nav-icon">👤</span> My Patients
+                </button>
+                <button class="nav-link" data-section="section-prescriptions">
+                    <span class="nav-icon">💊</span> Prescriptions
+                </button>
+                <button class="nav-link" data-section="section-adherence">
+                    <span class="nav-icon">📊</span> Adherence Monitor
+                </button>
+                <button class="nav-link" data-section="section-appointments">
+                    <span class="nav-icon">📅</span> Schedule Appointment
+                </button>
+            </nav>
+            <div class="sidebar-footer">
+                <button class="logout-btn"><span>🚪</span> Logout</button>
+            </div>
+        </aside>
+
+        <!-- Main -->
+        <div class="main-content">
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button class="hamburger-btn" id="hamburger-btn">☰</button>
+                    <div>
+                        <div class="topbar-title" id="topbar-greeting">Welcome 👋</div>
+                        <div class="topbar-subtitle">Doctor Dashboard</div>
+                    </div>
+                </div>
+                <div class="topbar-right">
+                    <div class="topbar-date" id="topbar-date"></div>
+                    <button class="btn btn-outline btn-sm logout-btn">Logout</button>
+                </div>
+            </header>
+
+            <main class="page-content">
+                <!-- ── Overview ── -->
+                <section class="dashboard-section" id="section-overview">
+                    <div class="page-header">
+                        <h2>Doctor Overview</h2>
+                        <p>Your practice summary and patient adherence at a glance.</p>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon stat-icon-blue">👤</div>
+                            <div class="stat-info">
+                                <div class="stat-value" id="stat-patients">0</div>
+                                <div class="stat-label">Total Patients</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon stat-icon-green">💊</div>
+                            <div class="stat-info">
+                                <div class="stat-value" id="stat-meds-total">0</div>
+                                <div class="stat-label">Active Prescriptions</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon stat-icon-orange">⚠️</div>
+                            <div class="stat-info">
+                                <div class="stat-value" id="stat-poor">0</div>
+                                <div class="stat-label">Poor Adherence</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon stat-icon-purple">📊</div>
+                            <div class="stat-info">
+                                <div class="stat-value" id="stat-avg-adh">--%</div>
+                                <div class="stat-label">Avg. Adherence</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick patient list preview -->
+                    <div class="card-flat">
+                        <div class="section-title">
+                            <h3>Patient Roster</h3>
+                            <button class="btn btn-primary btn-sm"
+                                onclick="document.querySelector('[data-section=section-patients]').click()">View
+                                All</button>
+                        </div>
+                        <div id="patient-list-preview"></div>
+                    </div>
+                </section>
+
+                <!-- ── Patients ── -->
+                <section class="dashboard-section" id="section-patients" style="display:none">
+                    <div class="page-header">
+                        <h2>My Patients</h2>
+                        <p>View adherence levels and manage each patient's prescriptions.</p>
+                    </div>
+                    <div id="patient-list">
+                        <div class="empty-state">
+                            <div class="empty-icon">👤</div>
+                            <p>Loading patients…</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ── Prescriptions ── -->
+                <section class="dashboard-section" id="section-prescriptions" style="display:none">
+                    <div class="page-header">
+                        <h2>Prescription Management</h2>
+                        <p>Add or update medications for your patients.</p>
+                    </div>
+                    <div class="form-panel">
+                        <h3>➕ Prescribe New Medication</h3>
+                        <form id="rx-form" novalidate>
+                            <input type="hidden" id="rx-patient-id">
+                            <div class="form-group">
+                                <label class="form-label">Patient</label>
+                                <select id="rx-select-patient" class="form-control">
+                                    <option value="">Select patient…</option>
+                                </select>
+                            </div>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+                                <div class="form-group">
+                                    <label class="form-label">Medication Name</label>
+                                    <input id="rx-med-name" type="text" class="form-control"
+                                        placeholder="e.g. Metformin" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Dosage</label>
+                                    <input id="rx-dosage" type="text" class="form-control" placeholder="e.g. 500mg"
+                                        required>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Frequency</label>
+                                <select id="rx-frequency" class="form-control" required>
+                                    <option value="">Select frequency…</option>
+                                    <option value="Once daily">Once daily</option>
+                                    <option value="Twice daily">Twice daily</option>
+                                    <option value="Three times daily">Three times daily</option>
+                                    <option value="Once at night">Once at night</option>
+                                    <option value="As needed">As needed</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Notes (optional)</label>
+                                <input id="rx-note" type="text" class="form-control"
+                                    placeholder="Take with food, avoid alcohol…">
+                            </div>
+                            <button type="submit" class="btn btn-primary">💊 Add Prescription</button>
+                        </form>
+                    </div>
+                </section>
+
+                <!-- ── Adherence Monitor ── -->
+                <section class="dashboard-section" id="section-adherence" style="display:none">
+                    <div class="page-header">
+                        <h2>Adherence Monitor</h2>
+                        <p>All patients sorted by adherence — worst performers highlighted.</p>
+                    </div>
+                    <div id="adherence-board">
+                        <div class="empty-state">
+                            <div class="empty-icon">📊</div>
+                            <p>Loading…</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ── Schedule Appointment ── -->
+                <section class="dashboard-section" id="section-appointments" style="display:none">
+                    <div class="page-header">
+                        <h2>Schedule Appointment</h2>
+                        <p>Book a new appointment for one of your patients.</p>
+                    </div>
+                    <div class="form-panel">
+                        <h3>📅 New Appointment</h3>
+                        <form id="appt-form" novalidate>
+                            <div class="form-group">
+                                <label class="form-label">Patient</label>
+                                <select id="appt-patient" class="form-control">
+                                    <option value="">Select patient…</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Date & Time</label>
+                                <input id="appt-datetime" type="datetime-local" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Reason / Notes</label>
+                                <input id="appt-reason" type="text" class="form-control"
+                                    placeholder="e.g. Routine Checkup" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary">📅 Schedule Appointment</button>
+                        </form>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <!-- ── Patient Detail Modal ── -->
+    <div class="modal-overlay" id="patient-detail-modal">
+        <div class="modal" style="max-width:600px;max-height:90vh;overflow-y:auto">
+            <div class="modal-header">
+                <h3>👤 <span id="detail-patient-name">Patient</span></h3>
+                <button class="modal-close" onclick="closeModal('patient-detail-modal')">✕</button>
+            </div>
+            <div style="margin-bottom:16px">
+                <h4 class="mb-4">Overall Adherence</h4>
+                <div style="font-size:2rem;font-weight:800" id="detail-adherence-pct">--%</div>
+            </div>
+            <div class="divider"></div>
+            <h4 class="mb-12">Medications</h4>
+            <div id="detail-meds"></div>
+            <div class="divider"></div>
+            <h4 class="mb-12">Appointments</h4>
+            <div id="detail-appts"></div>
+            <div class="mt-16">
+                <button class="btn btn-primary"
+                    onclick="openRxForm(document.getElementById('detail-patient-name').textContent,'')">+ Prescribe
+                    Medication</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Prescription Modal (from patient row button) ── -->
+    <div class="modal-overlay" id="rx-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>💊 Prescribe for <span id="rx-patient-name">Patient</span></h3>
+                <button class="modal-close" onclick="closeModal('rx-modal')">✕</button>
+            </div>
+            <form id="rx-form-modal" novalidate>
+                <input type="hidden" id="rx-patient-id-modal">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+                    <div class="form-group">
+                        <label class="form-label">Medication Name</label>
+                        <input id="rx-med-name-m" type="text" class="form-control" placeholder="e.g. Metformin"
+                            required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Dosage</label>
+                        <input id="rx-dosage-m" type="text" class="form-control" placeholder="e.g. 500mg" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Frequency</label>
+                    <select id="rx-frequency-m" class="form-control" required>
+                        <option value="">Select…</option>
+                        <option value="Once daily">Once daily</option>
+                        <option value="Twice daily">Twice daily</option>
+                        <option value="Three times daily">Three times daily</option>
+                        <option value="Once at night">Once at night</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Notes</label>
+                    <input id="rx-note-m" type="text" class="form-control" placeholder="Optional notes…">
+                </div>
+                <div style="display:flex;gap:10px">
+                    <button type="submit" class="btn btn-primary flex-1">Add Prescription</button>
+                    <button type="button" class="btn btn-ghost" onclick="closeModal('rx-modal')">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="scripts/auth.js"></script>
+    <script src="scripts/doctor.js"></script>
+    <script>
+        // Sync patient list to overview preview
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                const full = document.getElementById('patient-list');
+                const preview = document.getElementById('patient-list-preview');
+                if (full && preview) {
+                    const rows = full.querySelectorAll('.patient-row');
+                    const first3 = Array.from(rows).slice(0, 3);
+                    preview.innerHTML = first3.map(r => r.outerHTML).join('') || full.innerHTML;
+                }
+            }, 600);
+
+            // Wire up modal rx form
+            const modalForm = document.getElementById('rx-form-modal');
+            if (modalForm) {
+                modalForm.addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    const pid = document.getElementById('rx-patient-id').value;
+                    document.getElementById('rx-select-patient').value = pid;
+                    document.getElementById('rx-med-name').value = document.getElementById('rx-med-name-m').value;
+                    document.getElementById('rx-dosage').value = document.getElementById('rx-dosage-m').value;
+                    document.getElementById('rx-frequency').value = document.getElementById('rx-frequency-m').value;
+                    document.getElementById('rx-form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+                    document.getElementById('rx-med-name-m').value = '';
+                    document.getElementById('rx-dosage-m').value = '';
+                    document.getElementById('rx-frequency-m').value = '';
+                });
+            }
+
+            // openRxForm override to fill modal form
+            const origOpen = window.openRxForm;
+            window.openRxForm = function (pid, pname) {
+                document.getElementById('rx-patient-id').value = pid;
+                document.getElementById('rx-patient-name').textContent = pname;
+                document.getElementById('rx-form-modal')?.reset();
+                document.getElementById('rx-patient-id-modal').value = pid;
+                document.getElementById('rx-modal')?.classList.add('open');
+            };
+        });
+    </script>
+</body>
+
+</html>

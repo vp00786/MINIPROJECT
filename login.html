@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login – AfterHeal</title>
+    <meta name="description" content="Sign in to AfterHeal and access your role-specific dashboard.">
+    <link rel="stylesheet" href="styles/global.css">
+    <link rel="stylesheet" href="styles/auth.css">
+</head>
+
+<body>
+    <div class="auth-page">
+        <!-- Brand Panel -->
+        <div class="auth-brand">
+            <div class="auth-brand-logo">
+                <div class="auth-brand-icon">🏥</div>
+                <div>
+                    <div class="auth-brand-name">AfterHeal</div>
+                    <div class="auth-brand-tagline">Patient Adherence System</div>
+                </div>
+            </div>
+            <div class="auth-brand-content">
+                <h2>Welcome back</h2>
+                <p>Sign in to access your personalised dashboard for medication tracking, prescriptions, and caregiver
+                    support.</p>
+                <div class="auth-features">
+                    <div class="auth-feature-item">
+                        <span class="feature-icon">🔐</span>
+                        <span class="feature-text">Role-based secure access — Patient, Doctor, Caregiver</span>
+                    </div>
+                    <div class="auth-feature-item">
+                        <span class="feature-icon">📊</span>
+                        <span class="feature-text">Real-time adherence scores updated instantly</span>
+                    </div>
+                    <div class="auth-feature-item">
+                        <span class="feature-icon">🚀</span>
+                        <span class="feature-text">Your dashboard is always one login away</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Panel -->
+        <div class="auth-form-panel">
+            <div class="auth-form-card">
+                <h2>Sign in</h2>
+                <p class="auth-subtitle">New to AfterHeal? <a href="signup.html" class="auth-link">Create an account</a>
+                </p>
+
+                <!-- Demo Creds Box -->
+                <div class="demo-creds-box">
+                    <h4>🔑 DEMO CREDENTIALS</h4>
+                    <p><strong>Patient:</strong> patient@demo.com / patient123</p>
+                    <p><strong>Doctor:</strong> doctor@demo.com / doctor123</p>
+                    <p><strong>Caregiver:</strong> caregiver@demo.com / caregiver123</p>
+                </div>
+
+                <!-- Alert -->
+                <div class="alert" id="login-alert" role="alert"></div>
+
+                <form id="login-form" novalidate>
+                    <!-- Email -->
+                    <div class="form-group">
+                        <label for="email" class="form-label">Email Address</label>
+                        <div class="input-icon-wrap">
+                            <span class="input-icon">✉️</span>
+                            <input type="email" id="email" class="form-control" placeholder="you@example.com"
+                                autocomplete="email" required>
+                        </div>
+                    </div>
+
+                    <!-- Password -->
+                    <div class="form-group">
+                        <label for="password" class="form-label">Password</label>
+                        <div class="password-wrap input-icon-wrap">
+                            <span class="input-icon">🔒</span>
+                            <input type="password" id="password" class="form-control" placeholder="Your password"
+                                autocomplete="current-password" required>
+                            <button type="button" class="password-toggle" id="toggle-pw"
+                                aria-label="Toggle password">👁️</button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-full btn-lg" id="login-btn">Sign In →</button>
+                </form>
+
+                <div class="auth-divider"><span>OR QUICK LOGIN</span></div>
+
+                <!-- Quick demo login buttons -->
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <button class="btn btn-ghost btn-sm flex-1" id="quick-patient"
+                        onclick="quickLogin('patient@demo.com','patient123')">👤 Patient Demo</button>
+                    <button class="btn btn-ghost btn-sm flex-1" id="quick-doctor"
+                        onclick="quickLogin('doctor@demo.com','doctor123')">👨‍⚕️ Doctor Demo</button>
+                    <button class="btn btn-ghost btn-sm flex-1" id="quick-cg"
+                        onclick="quickLogin('caregiver@demo.com','caregiver123')">👩‍👧 Caregiver Demo</button>
+                </div>
+
+                <div class="auth-form-footer" style="margin-top:20px">
+                    <a href="index.html">← Back to Home</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="scripts/auth.js"></script>
+    <script>
+        function quickLogin(email, password) {
+            document.getElementById('email').value = email;
+            document.getElementById('password').value = password;
+            document.getElementById('login-form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+        }
+    </script>
+</body>
+
+</html>

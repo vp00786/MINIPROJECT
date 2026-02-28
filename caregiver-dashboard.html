@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Caregiver Dashboard – AfterHeal</title>
+    <meta name="description" content="Monitor patient adherence, view missed dose alerts, and log caregiver support.">
+    <link rel="stylesheet" href="styles/global.css">
+    <link rel="stylesheet" href="styles/dashboard.css">
+</head>
+
+<body class="theme-caregiver">
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <div class="dashboard-shell">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-logo">
+                <div class="sidebar-logo-icon theme-caregiver"
+                    style="background:rgba(108,92,231,0.15);color:var(--caregiver-color)">🏥</div>
+                <div>
+                    <div class="sidebar-logo-text">AfterHeal</div>
+                    <div class="sidebar-logo-sub">Caregiver Portal</div>
+                </div>
+            </div>
+            <div class="sidebar-user">
+                <div class="sidebar-avatar" id="sidebar-avatar" style="background:var(--caregiver-color)">C</div>
+                <div>
+                    <div class="sidebar-user-name" id="sidebar-user-name">Caregiver</div>
+                    <div class="sidebar-user-role" id="sidebar-user-role">caregiver</div>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-group-label">Care Management</div>
+                <button class="nav-link active" data-section="section-overview">
+                    <span class="nav-icon">🏠</span> Overview
+                </button>
+                <button class="nav-link" data-section="section-patients">
+                    <span class="nav-icon">👤</span> Patient Overview
+                </button>
+                <button class="nav-link" data-section="section-alerts">
+                    <span class="nav-icon">🔔</span> Missed Dose Alerts
+                    <span class="nav-badge" id="nav-alert-badge"></span>
+                </button>
+                <button class="nav-link" data-section="section-log">
+                    <span class="nav-icon">📝</span> Support Log
+                </button>
+            </nav>
+            <div class="sidebar-footer">
+                <button class="logout-btn"><span>🚪</span> Logout</button>
+            </div>
+        </aside>
+
+        <!-- Main -->
+        <div class="main-content">
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button class="hamburger-btn" id="hamburger-btn">☰</button>
+                    <div>
+                        <div class="topbar-title" id="topbar-greeting">Welcome 👋</div>
+                        <div class="topbar-subtitle">Caregiver Dashboard</div>
+                    </div>
+                </div>
+                <div class="topbar-right">
+                    <div class="topbar-date" id="topbar-date"></div>
+                    <button class="btn btn-outline btn-sm logout-btn">Logout</button>
+                </div>
+            </header>
+
+            <main class="page-content">
+                <!-- ── Overview ── -->
+                <section class="dashboard-section" id="section-overview">
+                    <div class="page-header">
+                        <h2>Caregiver Overview</h2>
+                        <p>Your care summary — patients assigned, missed doses, and support activity.</p>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon stat-icon-purple">👤</div>
+                            <div class="stat-info">
+                                <div class="stat-value" id="stat-assigned">0</div>
+                                <div class="stat-label">Patients Assigned</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon stat-icon-orange">⚠️</div>
+                            <div class="stat-info">
+                                <div class="stat-value" id="stat-missed-d">0</div>
+                                <div class="stat-label">Total Missed Doses</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon stat-icon-green">📊</div>
+                            <div class="stat-info">
+                                <div class="stat-value" id="stat-avg-adh">--%</div>
+                                <div class="stat-label">Avg. Adherence</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon stat-icon-blue">📝</div>
+                            <div class="stat-info">
+                                <div class="stat-value" id="stat-logs">0</div>
+                                <div class="stat-label">Support Logs</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Alert preview -->
+                    <div class="card-flat mb-16">
+                        <div class="section-title">
+                            <h3>⚠️ Recent Missed Doses</h3>
+                            <button class="btn btn-outline btn-sm"
+                                onclick="document.querySelector('[data-section=section-alerts]').click()">View
+                                All</button>
+                        </div>
+                        <div id="alerts-preview"></div>
+                    </div>
+
+                    <!-- Quick Log -->
+                    <div class="card-flat">
+                        <h3 style="margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border)">📝
+                            Quick Support Note</h3>
+                        <form id="quick-log-form" novalidate>
+                            <div style="display:grid;grid-template-columns:1fr 2fr auto;gap:12px;align-items:end">
+                                <div class="form-group" style="margin:0">
+                                    <label class="form-label">Patient</label>
+                                    <select id="quick-log-patient" class="form-control">
+                                        <option value="">Select…</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" style="margin:0">
+                                    <label class="form-label">Note</label>
+                                    <input id="quick-log-note" type="text" class="form-control"
+                                        placeholder="e.g. Assisted with morning medications…">
+                                </div>
+                                <button type="submit" class="btn btn-accent">Log</button>
+                            </div>
+                        </form>
+                    </div>
+                </section>
+
+                <!-- ── Patient Overview ── -->
+                <section class="dashboard-section" id="section-patients" style="display:none">
+                    <div class="page-header">
+                        <h2>Patient Overview</h2>
+                        <p>Monitor assigned patients' medication schedules and adherence status.</p>
+                    </div>
+                    <div id="patient-overview">
+                        <div class="empty-state">
+                            <div class="empty-icon">👤</div>
+                            <p>Loading patients…</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ── Missed Dose Alerts ── -->
+                <section class="dashboard-section" id="section-alerts" style="display:none">
+                    <div class="page-header">
+                        <h2>Missed Dose Alerts</h2>
+                        <p>Real-time alerts for any overdue medications across your assigned patients.</p>
+                    </div>
+                    <div id="missed-alerts">
+                        <div class="empty-state">
+                            <div class="empty-icon">🔔</div>
+                            <p>Loading alerts…</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ── Support Log ── -->
+                <section class="dashboard-section" id="section-log" style="display:none">
+                    <div class="page-header">
+                        <h2>Support Log</h2>
+                        <p>Record assistance provided and add notes for each patient interaction.</p>
+                    </div>
+                    <div class="form-panel mb-24">
+                        <h3>📝 Add Support Note</h3>
+                        <form id="log-form" novalidate>
+                            <input type="hidden" id="log-patient-id">
+                            <div class="form-group">
+                                <label class="form-label">Patient</label>
+                                <select id="log-select-patient" class="form-control">
+                                    <option value="">Select patient…</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Support Note</label>
+                                <input id="log-note" type="text" class="form-control"
+                                    placeholder="Describe the assistance provided…" required>
+                            </div>
+                            <button type="submit" class="btn btn-accent">📝 Save Note</button>
+                        </form>
+                    </div>
+
+                    <div class="section-title">
+                        <h3>Log History</h3>
+                    </div>
+                    <div id="support-log">
+                        <div class="empty-state">
+                            <div class="empty-icon">📋</div>
+                            <p>No log entries yet.</p>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <!-- ── Med Schedule Modal ── -->
+    <div class="modal-overlay" id="schedule-modal">
+        <div class="modal" style="max-width:600px;max-height:90vh;overflow-y:auto">
+            <div class="modal-header">
+                <h3 id="schedule-modal-title">Medication Schedule</h3>
+                <button class="modal-close" onclick="closeModal('schedule-modal')">✕</button>
+            </div>
+            <div id="schedule-content"></div>
+        </div>
+    </div>
+
+    <!-- ── Log Support Modal ── -->
+    <div class="modal-overlay" id="log-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>📝 Log Support for <span id="log-patient-name">Patient</span></h3>
+                <button class="modal-close" onclick="closeModal('log-modal')">✕</button>
+            </div>
+            <form id="log-form-modal" novalidate>
+                <div class="form-group">
+                    <label class="form-label">Support Note</label>
+                    <input id="log-note" type="text" class="form-control" placeholder="e.g. Assisted with medications…"
+                        required>
+                </div>
+                <div style="display:flex;gap:10px">
+                    <button type="submit" class="btn btn-accent flex-1">Save Note</button>
+                    <button type="button" class="btn btn-ghost" onclick="closeModal('log-modal')">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="scripts/auth.js"></script>
+    <script src="scripts/caregiver.js"></script>
+    <script>
+        // Sync alerts preview to overview section
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                const full = document.getElementById('missed-alerts');
+                const preview = document.getElementById('alerts-preview');
+                if (full && preview) {
+                    const banners = full.querySelectorAll('.alert-banner');
+                    const first3 = Array.from(banners).slice(0, 3);
+                    preview.innerHTML = first3.map(b => b.outerHTML).join('') || '<div class="empty-state"><div class="empty-icon">✅</div><p>No missed doses!</p></div>';
+                }
+            }, 700);
+            setInterval(() => {
+                const full = document.getElementById('missed-alerts');
+                const preview = document.getElementById('alerts-preview');
+                if (full && preview) {
+                    const banners = full.querySelectorAll('.alert-banner');
+                    const first3 = Array.from(banners).slice(0, 3);
+                    if (first3.length) preview.innerHTML = first3.map(b => b.outerHTML).join('');
+                }
+            }, 3000);
+        });
+    </script>
+</body>
+
+</html>

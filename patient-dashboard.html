@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Dashboard – AfterHeal</title>
+    <meta name="description" content="Track your medication adherence, appointments, and daily health summary.">
+    <link rel="stylesheet" href="styles/global.css">
+    <link rel="stylesheet" href="styles/dashboard.css">
+</head>
+
+<body class="theme-patient">
+    <!-- Sidebar Overlay (mobile) -->
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <div class="dashboard-shell">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-logo">
+                <div class="sidebar-logo-icon theme-patient">🏥</div>
+                <div>
+                    <div class="sidebar-logo-text">AfterHeal</div>
+                    <div class="sidebar-logo-sub">Patient Portal</div>
+                </div>
+            </div>
+            <div class="sidebar-user">
+                <div class="sidebar-avatar" id="sidebar-avatar" style="background:var(--patient-color)">A</div>
+                <div>
+                    <div class="sidebar-user-name" id="sidebar-user-name">Patient</div>
+                    <div class="sidebar-user-role" id="sidebar-user-role">patient</div>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-group-label">My Health</div>
+                <button class="nav-link active" data-section="section-overview">
+                    <span class="nav-icon">🏠</span> Overview
+                </button>
+                <button class="nav-link" data-section="section-medications">
+                    <span class="nav-icon">💊</span> Medications
+                </button>
+                <button class="nav-link" data-section="section-appointments">
+                    <span class="nav-icon">📅</span> Appointments
+                </button>
+                <button class="nav-link" data-section="section-summary">
+                    <span class="nav-icon">📊</span> Daily Summary
+                </button>
+            </nav>
+            <div class="sidebar-footer">
+                <button class="logout-btn"><span>🚪</span> Logout</button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Topbar -->
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button class="hamburger-btn" id="hamburger-btn" aria-label="Toggle menu">☰</button>
+                    <div>
+                        <div class="topbar-title" id="topbar-greeting">Welcome 👋</div>
+                        <div class="topbar-subtitle">Patient Dashboard</div>
+                    </div>
+                </div>
+                <div class="topbar-right">
+                    <div class="topbar-date" id="topbar-date"></div>
+                    <button class="btn btn-outline btn-sm logout-btn">Logout</button>
+                </div>
+            </header>
+
+            <!-- Page Content -->
+            <main class="page-content">
+                <!-- ── Overview Section ── -->
+                <section class="dashboard-section" id="section-overview">
+                    <div class="page-header">
+                        <h2>My Health Overview</h2>
+                        <p>Your medication adherence and appointment summary at a glance.</p>
+                    </div>
+
+                    <!-- Adherence hero widget -->
+                    <div class="adherence-summary">
+                        <div class="pct-big" id="adherence-pct-big">--</div>
+                        <div class="pct-label">Overall Adherence Rate</div>
+                        <div class="status-pill">Calculating…</div>
+                    </div>
+
+                    <!-- Stat cards -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon stat-icon-green">✅</div>
+                            <div class="stat-info">
+                                <div class="stat-value" id="stat-today-taken">0</div>
+                                <div class="stat-label">Doses Taken Today</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon stat-icon-orange">⏰</div>
+                            <div class="stat-info">
+                                <div class="stat-value" id="stat-today-upcoming">0</div>
+                                <div class="stat-label">Upcoming Today</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon stat-icon-blue">❌</div>
+                            <div class="stat-info">
+                                <div class="stat-value" id="stat-today-missed">0</div>
+                                <div class="stat-label">Missed Today</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon stat-icon-purple">📅</div>
+                            <div class="stat-info">
+                                <div class="stat-value" id="stat-upcoming">0</div>
+                                <div class="stat-label">Upcoming Appointments</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Insight -->
+                    <div class="card-flat mt-16">
+                        <h4 class="mb-8">💡 Adherence Insight</h4>
+                        <span id="adherence-insight" class="badge badge-primary">Calculating…</span>
+                    </div>
+                </section>
+
+                <!-- ── Medications Section ── -->
+                <section class="dashboard-section" id="section-medications" style="display:none">
+                    <div class="page-header">
+                        <h2>My Medications</h2>
+                        <p>All prescribed medications with dosage details. Mark each dose as taken.</p>
+                    </div>
+
+                    <div class="card-flat mb-16">
+                        <div class="flex-between mb-8">
+                            <h4>Overall Adherence</h4>
+                            <span id="stat-adherence" class="fw-700 text-primary-c">--%</span>
+                        </div>
+                        <div class="progress-wrap">
+                            <div class="progress-bar progress-good" id="adh-bar-main" style="width:0%"></div>
+                        </div>
+                    </div>
+
+                    <div id="med-list">
+                        <div class="empty-state">
+                            <div class="empty-icon">💊</div>
+                            <p>Loading medications…</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ── Appointments Section ── -->
+                <section class="dashboard-section" id="section-appointments" style="display:none">
+                    <div class="page-header">
+                        <h2>My Appointments</h2>
+                        <p>Track upcoming, missed, and attended appointments.</p>
+                    </div>
+
+                    <!-- Stats row -->
+                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px">
+                        <div class="stat-card">
+                            <div class="stat-icon stat-icon-blue">📅</div>
+                            <div class="stat-info">
+                                <div class="stat-value" id="stat-upcoming2">0</div>
+                                <div class="stat-label">Upcoming</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon stat-icon-orange">⚠️</div>
+                            <div class="stat-info">
+                                <div class="stat-value" id="stat-missed">0</div>
+                                <div class="stat-label">Missed</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon stat-icon-green">✅</div>
+                            <div class="stat-info">
+                                <div class="stat-value" id="stat-attended">0</div>
+                                <div class="stat-label">Attended</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tab-bar" data-tab-container>
+                        <button class="tab-btn active" data-tab="tab-upcoming">📅 Upcoming</button>
+                        <button class="tab-btn" data-tab="tab-missed">⚠️ Missed</button>
+                        <button class="tab-btn" data-tab="tab-attended">✅ Attended</button>
+                    </div>
+                    <div class="tab-panel active" id="tab-upcoming">
+                        <div id="upcoming-appts"></div>
+                    </div>
+                    <div class="tab-panel" id="tab-missed">
+                        <div id="missed-appts"></div>
+                    </div>
+                    <div class="tab-panel" id="tab-attended">
+                        <div id="attended-appts"></div>
+                    </div>
+                </section>
+
+                <!-- ── Daily Summary Section ── -->
+                <section class="dashboard-section" id="section-summary" style="display:none">
+                    <div class="page-header">
+                        <h2>Daily Summary</h2>
+                        <p>Your adherence breakdown and personalised health insights.</p>
+                    </div>
+
+                    <div class="adherence-summary">
+                        <div class="pct-big" id="adh-pct-big2">--%</div>
+                        <div class="pct-label">Overall Adherence</div>
+                        <div class="status-pill" id="summary-status-pill">Calculating…</div>
+                    </div>
+
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+                        <div class="card">
+                            <h4 class="mb-12">Today's Progress</h4>
+                            <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+                                <span style="font-size:0.88rem;color:var(--text-secondary)">Doses Taken</span>
+                                <span class="fw-700 text-good" id="sum-taken">-</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+                                <span style="font-size:0.88rem;color:var(--text-secondary)">Doses Missed</span>
+                                <span class="fw-700 text-poor" id="sum-missed">-</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between">
+                                <span style="font-size:0.88rem;color:var(--text-secondary)">Upcoming</span>
+                                <span class="fw-700 text-moderate" id="sum-upcoming">-</span>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <h4 class="mb-12">Status Indicator</h4>
+                            <div style="font-size:3rem;text-align:center;margin-bottom:8px" id="sum-emoji">📊</div>
+                            <div style="text-align:center;font-weight:700;font-size:1.1rem" id="sum-label">-</div>
+                            <div style="text-align:center;margin-top:8px">
+                                <span id="adherence-insight2" class="badge badge-primary">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h4 class="mb-16">Adherence Scale</h4>
+                        <div style="display:flex;gap:12px;flex-wrap:wrap">
+                            <div
+                                style="flex:1;min-width:140px;background:var(--good-bg);border-radius:var(--radius-sm);padding:14px;border-left:3px solid var(--good)">
+                                <div class="fw-700 text-good mb-4">🟢 Good (≥80%)</div>
+                                <div style="font-size:0.82rem;color:var(--text-secondary)">Excellent adherence — keep it
+                                    up!</div>
+                            </div>
+                            <div
+                                style="flex:1;min-width:140px;background:var(--mod-bg);border-radius:var(--radius-sm);padding:14px;border-left:3px solid var(--moderate)">
+                                <div class="fw-700 text-moderate mb-4">🟡 Moderate (60–79%)</div>
+                                <div style="font-size:0.82rem;color:var(--text-secondary)">Set reminders to improve!
+                                </div>
+                            </div>
+                            <div
+                                style="flex:1;min-width:140px;background:var(--poor-bg);border-radius:var(--radius-sm);padding:14px;border-left:3px solid var(--poor)">
+                                <div class="fw-700 text-poor mb-4">🔴 Poor (&lt;60%)</div>
+                                <div style="font-size:0.82rem;color:var(--text-secondary)">Contact your doctor or
+                                    caregiver.</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <script src="scripts/auth.js"></script>
+    <script src="scripts/patient.js"></script>
+    <script>
+        // Wire up summary section mirrors
+        document.addEventListener('DOMContentLoaded', () => {
+            function mirrorSummary() {
+                const pct = parseInt(document.getElementById('adherence-pct-big')?.textContent) || 0;
+                const taken = parseInt(document.getElementById('stat-today-taken')?.textContent) || 0;
+                const missed = parseInt(document.getElementById('stat-today-missed')?.textContent) || 0;
+                const upcoming = parseInt(document.getElementById('stat-today-upcoming')?.textContent) || 0;
+                const el2 = document.getElementById('adh-pct-big2');
+                const pill2 = document.getElementById('summary-status-pill');
+                const sp = document.querySelector('.status-pill');
+                if (el2) el2.textContent = (document.getElementById('adherence-pct-big')?.textContent || '--');
+                if (pill2 && sp) pill2.textContent = sp.textContent;
+                const cls = pct >= 80 ? 'good' : pct >= 60 ? 'moderate' : 'poor';
+                const emojis = { good: '🌟', moderate: '💪', poor: '⚠️' };
+                const labels = { good: 'Good', moderate: 'Moderate', poor: 'Poor' };
+                const el = id => document.getElementById(id);
+                if (el('sum-taken')) el('sum-taken').textContent = taken;
+                if (el('sum-missed')) el('sum-missed').textContent = missed;
+                if (el('sum-upcoming')) el('sum-upcoming').textContent = upcoming;
+                if (el('sum-emoji')) el('sum-emoji').textContent = emojis[cls] || '📊';
+                if (el('sum-label')) { el('sum-label').textContent = labels[cls] || '-'; el('sum-label').className = `fw-700 text-${cls}`; }
+                if (el('adherence-insight2')) {
+                    const msgs2 = { good: "Great job! Keep taking medications on time.", moderate: "Set reminders to improve your adherence!", poor: "⚠️ Please contact your doctor or caregiver." };
+                    el('adherence-insight2').textContent = msgs2[cls];
+                    el('adherence-insight2').className = `badge badge-${cls}`;
+                }
+                // sync stat-upcoming across sections
+                const su2 = document.getElementById('stat-upcoming2');
+                const su1 = document.getElementById('stat-upcoming');
+                if (su2 && su1) su2.textContent = su1.textContent;
+                // sync adh bar
+                const bar = document.getElementById('adh-bar-main');
+                if (bar) { bar.style.width = pct + '%'; bar.className = `progress-bar progress-${cls}`; }
+                if (el('stat-adherence')) el('stat-adherence').textContent = pct + '%';
+            }
+            // Run after patient.js renders
+            setTimeout(mirrorSummary, 400);
+            setInterval(mirrorSummary, 2000);
+        });
+    </script>
+</body>
+
+</html>
