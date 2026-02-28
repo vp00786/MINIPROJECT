@@ -468,11 +468,10 @@
                                 <div class="scope-avatar">📄</div>
                                 <div class="scope-meta">
                                     <div class="scope-name">Documents for: <span id="docs-patient-name">—</span></div>
-                                    <div class="scope-label">Viewing patient medical documents</div>
+                                    <div class="scope-label">View-only – doctors may read patient documents but cannot
+                                        upload or delete them</div>
                                 </div>
-                                <button class="btn btn-primary btn-sm" onclick="openDocUploadModal()">
-                                    ➕ Upload Document
-                                </button>
+                                <!-- Upload intentionally removed: doctors have view-only document access -->
                             </div>
 
                             <!-- Document grid -->
@@ -745,47 +744,7 @@
         </div>
     </div>
 
-    <!-- Document Upload Modal -->
-    <div class="modal-overlay" id="doc-upload-modal">
-        <div class="modal">
-            <div class="modal-header">
-                <h3>📄 Upload Document for <span id="doc-upload-patient-name">Patient</span></h3>
-                <button class="modal-close" onclick="closeModal('doc-upload-modal')">✕</button>
-            </div>
-            <form id="doc-upload-form" novalidate>
-                <div class="form-group">
-                    <label class="form-label">Document Name <span class="text-poor">*</span></label>
-                    <input id="doc-name" type="text" class="form-control"
-                        placeholder="e.g. Blood Sugar Report – Feb 2026" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Document Type <span class="text-poor">*</span></label>
-                    <select id="doc-type" class="form-control" required>
-                        <option value="">Select type…</option>
-                        <option value="lab_report">🧪 Lab Report</option>
-                        <option value="prescription">💊 Prescription</option>
-                        <option value="discharge_summary">🏥 Discharge Summary</option>
-                        <option value="x_ray">🩻 X-Ray / Imaging</option>
-                        <option value="other">📄 Other</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Attach File <span
-                            style="font-size:0.78rem;color:var(--text-muted)">(simulated – URL stored as placeholder in
-                            demo)</span></label>
-                    <input id="doc-file" type="file" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.docx">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Notes / Summary (optional)</label>
-                    <input id="doc-notes" type="text" class="form-control" placeholder="Key findings or remarks…">
-                </div>
-                <div style="display:flex;gap:10px">
-                    <button type="submit" class="btn btn-primary flex-1">📄 Save Document</button>
-                    <button type="button" class="btn btn-ghost" onclick="closeModal('doc-upload-modal')">Cancel</button>
-                </div>
-            </form>
-        </div>
-    </div>
+    <!-- Doc upload modal was intentionally removed. Doctors have view-only access to patient documents. -->
 
     <!-- ══════════════════════════════════════════════════════════════════════
     SCRIPTS

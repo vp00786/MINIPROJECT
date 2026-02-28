@@ -1,70 +1,105 @@
 /**
- * AfterHeal – patient.js
- * Patient Dashboard: Medication tracker, appointments, adherence summary
+ * AfterHeal – patient.js  (Enhanced v2)
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Patient Dashboard:
+ *   • Medication tracker with per-doctor filter
+ *   • Appointment management (upcoming/missed/attended) with per-doctor filter
+ *   • Missed-dose alert integration via notifications.js (AHNotif)
+ *   • Emergency contact management
+ *   • Daily adherence summary
+ * ─────────────────────────────────────────────────────────────────────────────
  */
 
 document.addEventListener('DOMContentLoaded', () => {
-    // ── Auth guard ──
+
+    // ── 1. Auth Guard ─────────────────────────────────────────────────────
     const session = AH.requireAuth('patient');
     if (!session) return;
 
+    // ── 2. Sidebar / Topbar ───────────────────────────────────────────────
     AH.populateSidebarUser(session);
     AH.setTopbarDate();
     AH.initSidebarToggle();
     AH.initLogout();
     AH.initNavLinks();
 
-    loadAll();
+    // ── 3. Filter State ────────────────────────────────────────────────────
+    /** doctorId or '' = all doctors. Used by both appointments and medications */
+    let _apptDoctorFilter = '';
+    let _medDoctorFilter = '';
 
-    // Refresh view when user marks something
+    // ── 4. Load All ────────────────────────────────────────────────────────
     function loadAll() {
+        // Run missed-dose detection first (populates AH.KEYS.NOTIFICATIONS)
+        if (window.AHNotif) {
+            AHNotif.detectMissedDoses(session.userId);
+            AHNotif.updateBadge(session.userId);
+        }
+
         renderAdherenceSummary();
+        renderOverviewAlertBanner();
         renderMedications();
         renderAppointments();
+        renderNotificationSection();
     }
 
-    // ── Adherence calculation ─────────────────────────────
+    // Re-render when switching sections
+    document.querySelectorAll('.nav-link[data-section]').forEach(link => {
+        link.addEventListener('click', () => setTimeout(loadAll, 60));
+    });
+
+    loadAll();
+
+    // ── 5. Helpers ─────────────────────────────────────────────────────────
     function calcAdherence(patientId) {
-        const doses = AH.getItem(AH.KEYS.DOSES).filter(d => d.patientId === patientId && d.scheduledTime);
+        const doses = AH.getItem(AH.KEYS.DOSES)
+            .filter(d => d.patientId === patientId && d.scheduledTime);
         const past = doses.filter(d => new Date(d.scheduledTime) <= new Date());
         if (!past.length) return 100;
-        const taken = past.filter(d => d.takenAt).length;
-        return Math.round((taken / past.length) * 100);
+        return Math.round(past.filter(d => d.takenAt).length / past.length * 100);
     }
 
     function adherenceClass(pct) {
-        if (pct >= 80) return 'good';
-        if (pct >= 60) return 'moderate';
-        return 'poor';
-    }
-    function adherenceLabel(pct) {
-        if (pct >= 80) return '🟢 Good';
-        if (pct >= 60) return '🟡 Moderate';
-        return '🔴 Poor';
+        return pct >= 80 ? 'good' : pct >= 60 ? 'moderate' : 'poor';
     }
 
-    // ── Adherence Summary Widget ──────────────────────────
+    function adherenceLabel(pct) {
+        return pct >= 80 ? '🟢 Good' : pct >= 60 ? '🟡 Moderate' : '🔴 Poor';
+    }
+
+    function escHtml(s) {
+        return String(s)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function formatTime(date) {
+        return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function emptyState(icon, msg) {
+        return `<div class="empty-state"><div class="empty-icon">${icon}</div><p>${msg}</p></div>`;
+    }
+
+    /** Look up doctor name by ID from users store */
+    function getDoctorName(doctorId) {
+        const u = AH.getItem(AH.KEYS.USERS).find(u => u.id === doctorId);
+        return u ? u.name : 'Unknown Doctor';
+    }
+
+    // ── 6. Adherence Summary ───────────────────────────────────────────────
     function renderAdherenceSummary() {
         const pct = calcAdherence(session.userId);
         const cls = adherenceClass(pct);
         const label = adherenceLabel(pct);
 
-        const pctBig = AH.$('.adherence-pct') || AH.$('#adherence-pct-big');
-        const statBadge = AH.$('.status-pill');
-        const bar = AH.$('.progress-bar');
+        // Overview hero
+        const pctBigEl = document.getElementById('adherence-pct-big');
+        const statusPill = document.querySelector('.status-pill');
+        if (pctBigEl) pctBigEl.textContent = pct + '%';
+        if (statusPill) statusPill.textContent = label;
 
-        if (pctBig) pctBig.textContent = pct + '%';
-        if (statBadge) statBadge.textContent = label;
-        if (bar) {
-            bar.style.width = pct + '%';
-            bar.className = `progress-bar progress-${cls}`;
-        }
-
-        // update stat cards if present
-        const statAdherence = document.getElementById('stat-adherence');
-        if (statAdherence) statAdherence.textContent = pct + '%';
-
-        // Insight text
+        // Insight
         const insightEl = document.getElementById('adherence-insight');
         if (insightEl) {
             const msgs = {
@@ -76,90 +111,209 @@ document.addEventListener('DOMContentLoaded', () => {
             insightEl.className = `badge badge-${cls} mt-8`;
         }
 
-        // Today's stats
-        renderTodayStats();
+        // Today stats
+        renderTodayStats(pct, cls);
     }
 
-    function renderTodayStats() {
+    function renderTodayStats(pct, cls) {
         const today = new Date();
         const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        const todayEnd = new Date(todayStart.getTime() + 86400000);
+
         const doses = AH.getItem(AH.KEYS.DOSES).filter(d => {
             if (d.patientId !== session.userId) return false;
             const s = new Date(d.scheduledTime);
-            return s >= todayStart && s < new Date(todayStart.getTime() + 86400000);
+            return s >= todayStart && s < todayEnd;
         });
 
-        const total = doses.length;
         const taken = doses.filter(d => d.takenAt).length;
         const missed = doses.filter(d => !d.takenAt && new Date(d.scheduledTime) < today).length;
         const upcoming = doses.filter(d => !d.takenAt && new Date(d.scheduledTime) >= today).length;
+        const upAppts = AH.getItem(AH.KEYS.APPOINTMENTS)
+            .filter(a => a.patientId === session.userId && new Date(a.datetime) >= today && !a.attended).length;
 
-        const el = (id) => document.getElementById(id);
+        const el = id => document.getElementById(id);
         if (el('stat-today-taken')) el('stat-today-taken').textContent = taken;
         if (el('stat-today-missed')) el('stat-today-missed').textContent = missed;
         if (el('stat-today-upcoming')) el('stat-today-upcoming').textContent = upcoming;
-        if (el('stat-today-total')) el('stat-today-total').textContent = total;
+        if (el('stat-upcoming')) el('stat-upcoming').textContent = upAppts;
+
+        // Medication section adherence bar
+        if (el('stat-adherence')) el('stat-adherence').textContent = pct + '%';
+        const bar = el('adh-bar-main');
+        if (bar) { bar.style.width = pct + '%'; bar.className = `progress-bar progress-${cls}`; }
+
+        // Daily summary section
+        if (el('adh-pct-big2')) el('adh-pct-big2').textContent = pct + '%';
+        if (el('summary-status-pill')) el('summary-status-pill').textContent = adherenceLabel(pct);
+        if (el('sum-taken')) el('sum-taken').textContent = taken;
+        if (el('sum-missed')) el('sum-missed').textContent = missed;
+        if (el('sum-upcoming')) el('sum-upcoming').textContent = upcoming;
+
+        // Status indicator card in Daily Summary
+        const emojis = { good: '🌟', moderate: '💪', poor: '⚠️' };
+        const labels = { good: 'Good', moderate: 'Moderate', poor: 'Poor' };
+        if (el('sum-emoji')) el('sum-emoji').textContent = emojis[cls] || '📊';
+        if (el('sum-label')) {
+            el('sum-label').textContent = labels[cls] || '-';
+            el('sum-label').className = `fw-700 text-${cls}`;
+        }
+        if (el('adherence-insight2')) {
+            const msgs2 = {
+                good: "Great job! Keep taking medications on time.",
+                moderate: "Set reminders to improve your adherence!",
+                poor: "⚠️ Please contact your doctor or caregiver.",
+            };
+            el('adherence-insight2').textContent = msgs2[cls];
+            el('adherence-insight2').className = `badge badge-${cls}`;
+        }
     }
 
-    // ── Medications ───────────────────────────────────────
+    // ── 7. Overview Alert Banner ───────────────────────────────────────────
+    /** Shows a yellow/red persistent banner in overview if doses are overdue today */
+    function renderOverviewAlertBanner() {
+        const banner = document.getElementById('overview-alert-banner');
+        if (!banner) return;
+
+        const now = new Date();
+        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const todayEnd = new Date(todayStart.getTime() + 86400000);
+        const threshold = 30 * 60 * 1000; // 30 min
+
+        const missedToday = AH.getItem(AH.KEYS.DOSES).filter(d => {
+            if (d.patientId !== session.userId || d.takenAt) return false;
+            const s = new Date(d.scheduledTime);
+            return s >= todayStart && s < todayEnd && (now - s) >= threshold;
+        });
+
+        if (!missedToday.length) {
+            banner.style.display = 'none';
+            return;
+        }
+
+        const meds = AH.getItem(AH.KEYS.MEDICATIONS);
+        const namesSet = new Set(missedToday.map(d => {
+            const m = meds.find(m => m.id === d.medId);
+            return m ? m.name : null;
+        }).filter(Boolean));
+
+        banner.style.display = 'flex';
+        banner.innerHTML = `
+            <span style="font-size:1.5rem">⚠️</span>
+            <div>
+                <strong>Missed Dose Alert!</strong>
+                You have ${missedToday.length} overdue dose${missedToday.length > 1 ? 's' : ''} today:
+                <em>${Array.from(namesSet).join(', ')}</em>.
+                Your emergency contacts have been notified (simulated).
+            </div>
+            <button class="btn btn-outline btn-sm" style="flex-shrink:0;border-color:currentColor"
+                onclick="document.querySelector('[data-section=section-alerts]').click()">
+                View Alerts →
+            </button>`;
+    }
+
+    // ── 8. Medications (with doctor filter) ────────────────────────────────
     function renderMedications() {
-        const meds = AH.getItem(AH.KEYS.MEDICATIONS).filter(m => m.patientId === session.userId);
+        let meds = AH.getItem(AH.KEYS.MEDICATIONS).filter(m => m.patientId === session.userId);
         const doses = AH.getItem(AH.KEYS.DOSES).filter(d => d.patientId === session.userId);
         const today = new Date();
         const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
         const todayEnd = new Date(todayStart.getTime() + 86400000);
 
+        // Build & populate doctor filter dropdown
+        populateMedDoctorFilter(meds);
+
+        // Apply filter
+        if (_medDoctorFilter) {
+            meds = meds.filter(m => m.doctorId === _medDoctorFilter);
+        }
+
         const container = document.getElementById('med-list');
         if (!container) return;
 
         if (!meds.length) {
-            container.innerHTML = `<div class="empty-state"><div class="empty-icon">💊</div><p>No medications prescribed yet.<br>Ask your doctor to add your prescription.</p></div>`;
+            container.innerHTML = emptyState('💊',
+                _medDoctorFilter
+                    ? 'No medications prescribed by this doctor.'
+                    : 'No medications prescribed yet. Ask your doctor to add your prescription.'
+            );
             return;
         }
 
         container.innerHTML = meds.map(med => {
-            // Today's doses for this med
-            const todayDoses = doses.filter(d => d.medId === med.id && new Date(d.scheduledTime) >= todayStart && new Date(d.scheduledTime) < todayEnd);
+            const todayDoses = doses.filter(d =>
+                d.medId === med.id &&
+                new Date(d.scheduledTime) >= todayStart &&
+                new Date(d.scheduledTime) < todayEnd
+            );
             const takenToday = todayDoses.filter(d => d.takenAt).length;
             const totalToday = todayDoses.length;
             const nextDue = todayDoses.find(d => !d.takenAt && new Date(d.scheduledTime) >= today);
             const allTakenToday = totalToday > 0 && takenToday === totalToday;
 
-            // Overall adherence for this med
             const pastDoses = doses.filter(d => d.medId === med.id && new Date(d.scheduledTime) <= today);
-            const medAdherence = pastDoses.length ? Math.round((pastDoses.filter(d => d.takenAt).length / pastDoses.length) * 100) : 100;
+            const medAdherence = pastDoses.length
+                ? Math.round(pastDoses.filter(d => d.takenAt).length / pastDoses.length * 100) : 100;
             const cls = adherenceClass(medAdherence);
+            const timeStr = nextDue
+                ? formatTime(new Date(nextDue.scheduledTime))
+                : allTakenToday ? 'All doses taken ✓' : 'No doses today';
 
-            const timeStr = nextDue ? formatTime(new Date(nextDue.scheduledTime)) : (allTakenToday ? 'All doses taken ✓' : 'No doses today');
+            // Missed-dose overdue highlight
+            const isOverdue = nextDue
+                ? false
+                : todayDoses.some(d => !d.takenAt && (today - new Date(d.scheduledTime)) >= 30 * 60 * 1000);
 
             return `
-      <div class="med-card" id="med-card-${med.id}">
-        <div class="med-icon" style="background:${med.color}22; color:${med.color}">💊</div>
-        <div class="med-info">
-          <div class="med-name">${escHtml(med.name)}</div>
-          <div class="med-detail">${escHtml(med.dosage)} · ${escHtml(med.frequency)}</div>
-          <div class="med-detail mt-4">
-            <span class="badge badge-${cls}" style="font-size:0.72rem">${medAdherence}% adherence</span>
-            <span style="margin-left:8px; color:var(--text-muted); font-size:0.78rem">Today: ${takenToday}/${totalToday} taken</span>
-          </div>
-          <div class="med-detail mt-4" style="color:var(--text-muted); font-size:0.78rem">⏰ ${timeStr}</div>
-        </div>
-        <div class="progress-wrap" style="width:80px; height:8px; align-self:center; display:inline-block; border-radius:99px; background:var(--surface2);">
-          <div class="progress-bar progress-${cls}" style="width:${medAdherence}%; height:100%; border-radius:99px;"></div>
-        </div>
-        <div class="med-actions">
-          ${allTakenToday
+            <div class="med-card ${isOverdue ? 'med-overdue' : ''}" id="med-card-${med.id}">
+                <div class="med-icon" style="background:${med.color}22; color:${med.color}">💊</div>
+                <div class="med-info">
+                    <div class="med-name">${escHtml(med.name)}</div>
+                    <div class="med-detail">${escHtml(med.dosage)} · ${escHtml(med.frequency)}</div>
+                    <div class="med-detail mt-4">
+                        <span class="badge badge-${cls}" style="font-size:0.72rem">${medAdherence}% adherence</span>
+                        <span style="margin-left:8px; color:var(--text-muted); font-size:0.78rem">Today: ${takenToday}/${totalToday}</span>
+                    </div>
+                    <div class="med-detail mt-4" style="color:var(--text-muted); font-size:0.78rem">⏰ ${timeStr}</div>
+                    <div class="med-detail mt-4" style="font-size:0.75rem; color:var(--text-muted)">
+                        👨‍⚕️ Prescribed by: <strong>${escHtml(getDoctorName(med.doctorId))}</strong>
+                    </div>
+                    ${isOverdue ? `<div style="font-size:0.75rem; color:var(--poor); margin-top:4px; font-weight:600">⚠️ Overdue — emergency contacts notified (simulated)</div>` : ''}
+                </div>
+                <div class="progress-wrap" style="width:80px;height:8px;align-self:center;border-radius:99px;background:var(--surface2)">
+                    <div class="progress-bar progress-${cls}" style="width:${medAdherence}%;height:100%;border-radius:99px"></div>
+                </div>
+                <div class="med-actions">
+                    ${allTakenToday
                     ? `<div class="taken-badge">✔ Taken</div>`
                     : nextDue
                         ? `<button class="btn btn-primary btn-sm" onclick="markTaken('${nextDue.id}')">Mark as Taken</button>`
-                        : `<div class="taken-badge" style="color:var(--text-muted); background:var(--surface2)">No dose due</div>`
+                        : `<div class="taken-badge" style="color:var(--text-muted);background:var(--surface2)">No dose due</div>`
                 }
-        </div>
-      </div>`;
+                </div>
+            </div>`;
         }).join('');
     }
 
-    // ── Mark Taken ────────────────────────────────────────
+    /** Populate the medication doctor-filter select */
+    function populateMedDoctorFilter(allMeds) {
+        const sel = document.getElementById('med-doctor-filter');
+        if (!sel) return;
+
+        const doctorIds = [...new Set(allMeds.map(m => m.doctorId).filter(Boolean))];
+        const current = sel.value;
+
+        sel.innerHTML = `<option value="">All Doctors</option>` +
+            doctorIds.map(id => `<option value="${id}" ${id === current ? 'selected' : ''}>${escHtml(getDoctorName(id))}</option>`).join('');
+    }
+
+    // Doctor filter change handler
+    window.onMedDoctorFilterChange = function (val) {
+        _medDoctorFilter = val;
+        renderMedications();
+    };
+
+    // ── 9. Mark Taken ──────────────────────────────────────────────────────
     window.markTaken = function (doseId) {
         const doses = AH.getItem(AH.KEYS.DOSES);
         const idx = doses.findIndex(d => d.id === doseId);
@@ -170,60 +324,97 @@ document.addEventListener('DOMContentLoaded', () => {
         loadAll();
     };
 
-    // ── Appointments ──────────────────────────────────────
+    // ── 10. Appointments (with doctor filter + doctor name display) ─────────
     function renderAppointments() {
-        const appts = AH.getItem(AH.KEYS.APPOINTMENTS).filter(a => a.patientId === session.userId);
+        let appts = AH.getItem(AH.KEYS.APPOINTMENTS).filter(a => a.patientId === session.userId);
         const now = new Date();
 
-        const upcoming = appts.filter(a => new Date(a.datetime) >= now && !a.attended).sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
-        const missed = appts.filter(a => new Date(a.datetime) < now && !a.attended).sort((a, b) => new Date(b.datetime) - new Date(a.datetime));
-        const attended = appts.filter(a => a.attended).sort((a, b) => new Date(b.datetime) - new Date(a.datetime));
+        // Build & populate doctor filter dropdown
+        populateApptDoctorFilter(appts);
 
-        const upEl = document.getElementById('upcoming-appts');
-        const msEl = document.getElementById('missed-appts');
-        const atEl = document.getElementById('attended-appts');
+        // Apply filter
+        if (_apptDoctorFilter) {
+            appts = appts.filter(a => a.doctorId === _apptDoctorFilter);
+        }
 
-        // Stat counters
-        const el = (id) => document.getElementById(id);
+        const upcoming = appts.filter(a => new Date(a.datetime) >= now && !a.attended)
+            .sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
+        const missed = appts.filter(a => new Date(a.datetime) < now && !a.attended)
+            .sort((a, b) => new Date(b.datetime) - new Date(a.datetime));
+        const attended = appts.filter(a => a.attended)
+            .sort((a, b) => new Date(b.datetime) - new Date(a.datetime));
+
+        // Stats
+        const el = id => document.getElementById(id);
         if (el('stat-upcoming')) el('stat-upcoming').textContent = upcoming.length;
+        if (el('stat-upcoming2')) el('stat-upcoming2').textContent = upcoming.length;
         if (el('stat-missed')) el('stat-missed').textContent = missed.length;
         if (el('stat-attended')) el('stat-attended').textContent = attended.length;
 
+        const upEl = el('upcoming-appts');
+        const msEl = el('missed-appts');
+        const atEl = el('attended-appts');
+
         if (upEl) upEl.innerHTML = upcoming.length
             ? upcoming.map(a => apptCard(a, 'upcoming')).join('')
-            : emptyState('📅', 'No upcoming appointments.');
+            : emptyState('📅', _apptDoctorFilter ? 'No upcoming appointments with this doctor.' : 'No upcoming appointments.');
 
         if (msEl) msEl.innerHTML = missed.length
             ? missed.map(a => apptCard(a, 'missed')).join('')
-            : emptyState('✅', 'No missed appointments!');
+            : emptyState('✅', _apptDoctorFilter ? 'No missed appointments with this doctor.' : 'No missed appointments!');
 
         if (atEl) atEl.innerHTML = attended.length
             ? attended.map(a => apptCard(a, 'attended')).join('')
-            : emptyState('📋', 'No attended appointments yet.');
+            : emptyState('📋', _apptDoctorFilter ? 'No attended appointments with this doctor.' : 'No attended appointments yet.');
     }
 
+    function populateApptDoctorFilter(allAppts) {
+        const sel = document.getElementById('appt-doctor-filter');
+        if (!sel) return;
+
+        const doctorIds = [...new Set(allAppts.map(a => a.doctorId).filter(Boolean))];
+        const current = sel.value;
+
+        sel.innerHTML = `<option value="">All Doctors</option>` +
+            doctorIds.map(id => `<option value="${id}" ${id === current ? 'selected' : ''}>${escHtml(getDoctorName(id))}</option>`).join('');
+    }
+
+    window.onApptDoctorFilterChange = function (val) {
+        _apptDoctorFilter = val;
+        renderAppointments();
+    };
+
+    /** Appointment card — now shows doctor name and status badge */
     function apptCard(a, type) {
         const dt = new Date(a.datetime);
         const day = dt.getDate();
         const mon = dt.toLocaleString('en', { month: 'short' });
         const time = formatTime(dt);
         const isMissed = type === 'missed';
+        const doctorName = getDoctorName(a.doctorId);
+
+        const statusBadge = isMissed
+            ? `<span class="badge badge-poor" style="font-size:0.72rem">Missed</span>`
+            : type === 'attended'
+                ? `<span class="badge badge-good" style="font-size:0.72rem">✔ Attended</span>`
+                : `<span class="badge badge-primary" style="font-size:0.72rem">Upcoming</span>`;
+
         return `
-    <div class="appt-card ${isMissed ? 'missed' : ''}" id="appt-${a.id}">
-      <div class="appt-date-box">
-        <div class="appt-day">${day}</div>
-        <div class="appt-month">${mon}</div>
-      </div>
-      <div class="appt-info">
-        <div class="appt-name">${escHtml(a.reason)}</div>
-        <div class="appt-sub">🕐 ${time} · ${dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</div>
-        ${isMissed ? `<span class="badge badge-poor" style="margin-top:6px; font-size:0.72rem">Missed</span>` : ''}
-        ${type === 'attended' ? `<span class="badge badge-good" style="margin-top:6px; font-size:0.72rem">✔ Attended</span>` : ''}
-      </div>
-      ${type !== 'attended'
+        <div class="appt-card ${isMissed ? 'missed' : ''}" id="appt-${a.id}">
+            <div class="appt-date-box">
+                <div class="appt-day">${day}</div>
+                <div class="appt-month">${mon}</div>
+            </div>
+            <div class="appt-info">
+                <div class="appt-name">${escHtml(a.reason)}</div>
+                <div class="appt-sub">🕐 ${time} · ${dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</div>
+                <div class="appt-sub" style="margin-top:4px">👨‍⚕️ ${escHtml(doctorName)}</div>
+                <div style="margin-top:6px">${statusBadge}</div>
+            </div>
+            ${type !== 'attended'
                 ? `<div style="flex-shrink:0"><button class="btn btn-accent btn-sm" onclick="markAttended('${a.id}')">Mark Attended</button></div>`
                 : ''}
-    </div>`;
+        </div>`;
     }
 
     window.markAttended = function (apptId) {
@@ -236,14 +427,55 @@ document.addEventListener('DOMContentLoaded', () => {
         renderAppointments();
     };
 
-    // ── Utility ────────────────────────────────────────────
-    function formatTime(date) {
-        return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    // ── 11. Notification Section ───────────────────────────────────────────
+    function renderNotificationSection() {
+        if (!window.AHNotif) return;
+        AHNotif.renderNotifications(session.userId);
+        AHNotif.renderEmergencyContacts(session.userId);
+        AHNotif.updateBadge(session.userId);
     }
-    function emptyState(icon, msg) {
-        return `<div class="empty-state"><div class="empty-icon">${icon}</div><p>${msg}</p></div>`;
+
+    // Add emergency contact form
+    const ecForm = document.getElementById('ec-add-form');
+    if (ecForm) {
+        ecForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const name = document.getElementById('ec-name').value.trim();
+            const relation = document.getElementById('ec-relation').value.trim();
+            const phone = document.getElementById('ec-phone').value.trim();
+
+            if (!name || !phone) {
+                AH.showToast('Name and phone number are required.', 'error'); return;
+            }
+            if (window.AHNotif) {
+                AHNotif.addContact(session.userId, name, relation, phone);
+                AHNotif.renderEmergencyContacts(session.userId);
+            }
+            ecForm.reset();
+            AH.showToast(`${name} added as emergency contact! 📞`, 'success');
+        });
     }
-    function escHtml(s) {
-        return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+    // Mark all read button
+    const markAllReadBtn = document.getElementById('btn-mark-all-read');
+    if (markAllReadBtn) {
+        markAllReadBtn.addEventListener('click', () => {
+            if (window.AHNotif) {
+                AHNotif.markAllRead(session.userId);
+                AHNotif.renderNotifications(session.userId);
+            }
+        });
+    }
+
+    // Clear all notifications button
+    const clearAllBtn = document.getElementById('btn-clear-notifs');
+    if (clearAllBtn) {
+        clearAllBtn.addEventListener('click', () => {
+            if (!confirm('Clear all notifications?')) return;
+            if (window.AHNotif) {
+                AHNotif.clearAllNotifications(session.userId);
+                AHNotif.renderNotifications(session.userId);
+            }
+        });
     }
 });

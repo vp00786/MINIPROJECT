@@ -11,7 +11,9 @@ const KEYS = {
     DOSES: 'ah_doses',
     APPOINTMENTS: 'ah_appointments',
     SUPPORT_LOG: 'ah_support_log',
-    DOCUMENTS: 'ah_documents',   // Patient medical documents
+    DOCUMENTS: 'ah_documents',          // Patient medical documents (view-only for doctors)
+    EMERGENCY_CONTACTS: 'ah_emergency_contacts',  // Patient emergency contacts
+    NOTIFICATIONS: 'ah_notifications',       // Missed-dose & system notifications
     SEEDED: 'ah_seeded',
 };
 
@@ -100,6 +102,16 @@ function seedDemoData() {
         { id: uuid(), patientId, doctorId, name: 'Lipid Panel Results', type: 'lab_report', uploadDate: new Date(today.getTime() - 45 * 86400000).toISOString(), url: '#', notes: 'LDL: 112 mg/dL, HDL: 48 mg/dL, Total: 195 mg/dL' },
     ];
     setItem(KEYS.DOCUMENTS, docs);
+
+    // Demo emergency contacts for patient
+    const emergencyContacts = [
+        { id: uuid(), patientId, name: 'Mary Johnson', relation: 'Mother', phone: '+1-555-0101', notifiedAt: null },
+        { id: uuid(), patientId, name: 'Robert Johnson', relation: 'Father', phone: '+1-555-0102', notifiedAt: null },
+    ];
+    setItem(KEYS.EMERGENCY_CONTACTS, emergencyContacts);
+
+    // Start with empty notification store (notifications.js will populate on missed doses)
+    setItem(KEYS.NOTIFICATIONS, []);
 
     localStorage.setItem(KEYS.SEEDED, 'true');
     console.log('[AfterHeal] Demo data seeded ✓');

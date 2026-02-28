@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
         loadAll();
         initPrescriptionForm();
         initAddAppointmentForm();
-        initDocumentUploadForm();
+        // Note: document upload is disabled for doctors (view-only access)
     }, 0);
 
     // ── 5. Re-render on nav tab click ──────────────────────────────────────
@@ -612,78 +612,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     ${doc.notes ? `<div class="doc-notes">${esc(doc.notes)}</div>` : ''}
                 </div>
+                <!-- VIEW ONLY – Doctors cannot upload or delete patient documents -->
                 <div class="doc-actions">
                     <a href="${doc.url}" target="_blank" class="btn btn-outline btn-sm"
                        onclick="${doc.url === '#' ? `event.preventDefault();AH.showToast('Document preview not available in demo mode.','info')` : ''}">
                        🔍 View
                     </a>
-                    <button class="btn btn-danger btn-sm" onclick="deleteDoc('${doc.id}')">🗑</button>
                 </div>
             </div>`;
         }).join('');
     }
 
-    window.deleteDoc = function (docId) {
-        if (!confirm('Remove this document?')) return;
-        AH.setItem(AH.KEYS.DOCUMENTS, AH.getItem(AH.KEYS.DOCUMENTS).filter(d => d.id !== docId));
-        AH.showToast('Document removed.', 'warning');
-        renderDocuments();
-        renderStats();
-    };
-
-    /** Upload document form */
-    function initDocumentUploadForm() {
-        const form = document.getElementById('doc-upload-form');
-        if (!form) return;
-
-        form.addEventListener('submit', function (e) {
-            e.preventDefault();
-
-            if (!_selectedPatientId) {
-                AH.showToast('Select a patient first.', 'error'); return;
-            }
-
-            const name = document.getElementById('doc-name').value.trim();
-            const type = document.getElementById('doc-type').value;
-            const notes = document.getElementById('doc-notes').value.trim();
-            const fileEl = document.getElementById('doc-file');
-            const fileName = fileEl && fileEl.files[0] ? fileEl.files[0].name : '';
-
-            if (!name || !type) {
-                AH.showToast('Enter document name and type.', 'error'); return;
-            }
-
-            const doc = {
-                id: AH.uuid(),
-                patientId: _selectedPatientId,
-                doctorId: session.userId,
-                name: fileName ? `${name} (${fileName})` : name,
-                type, notes,
-                uploadDate: new Date().toISOString(),
-                url: '#',   // In a real backend this would be a storage URL
-            };
-
-            const docs = AH.getItem(AH.KEYS.DOCUMENTS);
-            docs.push(doc);
-            AH.setItem(AH.KEYS.DOCUMENTS, docs);
-
-            closeModal('doc-upload-modal');
-            form.reset();
-            AH.showToast(`Document "${name}" added! 📄`, 'success');
-            renderDocuments();
-            renderStats();
-        });
-    }
-
-    window.openDocUploadModal = function () {
-        if (!_selectedPatientId) {
-            AH.showToast('Select a patient from the Patient List first.', 'warning'); return;
-        }
-        const p = AH.getItem(AH.KEYS.USERS).find(u => u.id === _selectedPatientId);
-        const lbl = document.getElementById('doc-upload-patient-name');
-        if (lbl && p) lbl.textContent = p.name;
-        openModal('doc-upload-modal');
-    };
+    // ── DOCUMENT RESTRICTION NOTICE ─────────────────────────────────────
+    // Doctors may ONLY VIEW patient documents — upload and deletion
+    // are intentionally disabled for the doctor role.
+    // Documents are managed by the patient and administrative staff.
+    // ────────────────────────────────────────────────────────────────────
 
     // ─────────────────────────────────────────────────────────────────────
     // OVERVIEW ADHERENCE BOARD (global – all patients, read-only)
