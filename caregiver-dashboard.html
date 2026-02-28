@@ -8,6 +8,49 @@
     <meta name="description" content="Monitor patient adherence, view missed dose alerts, and log caregiver support.">
     <link rel="stylesheet" href="styles/global.css">
     <link rel="stylesheet" href="styles/dashboard.css">
+    <style>
+        /* Non-dismissible caregiver alert banner */
+        .cg-alert-banner {
+            display: none;
+            align-items: flex-start;
+            gap: 16px;
+            background: linear-gradient(135deg, #FFF0F0, #FFF8F8);
+            border: 2px solid var(--poor);
+            border-radius: var(--radius);
+            padding: 16px 20px;
+            margin: 16px 20px 0;
+            color: #7D1A1A;
+        }
+
+        .cg-alert-banner .cg-banner-icon {
+            font-size: 1.6rem;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .cg-alert-banner .cg-banner-body {
+            flex: 1;
+        }
+
+        .cg-alert-banner .cg-banner-actions {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+            flex-wrap: wrap;
+        }
+
+        .log-unack {
+            border-left: 3px solid var(--poor);
+        }
+
+        .alert-log-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 14px 16px;
+            margin-bottom: 10px;
+        }
+    </style>
 </head>
 
 <body class="theme-caregiver">
@@ -43,6 +86,10 @@
                     <span class="nav-icon">🔔</span> Missed Dose Alerts
                     <span class="nav-badge" id="nav-alert-badge"></span>
                 </button>
+                <button class="nav-link" data-section="section-my-alerts">
+                    <span class="nav-icon">🚨</span> My Received Alerts
+                    <span class="nav-badge" id="cg-alert-badge" style="background:var(--poor)"></span>
+                </button>
                 <button class="nav-link" data-section="section-log">
                     <span class="nav-icon">📝</span> Support Log
                 </button>
@@ -69,6 +116,29 @@
             </header>
 
             <main class="page-content">
+
+                <!-- ⚠️ NON-DISMISSIBLE CAREGIVER ALERT BANNER ──────────────────────────
+                     This banner is shown whenever there are unacknowledged missed-dose
+                     alert logs directed at this caregiver. It cannot be closed — it
+                     disappears only when the caregiver clicks "Acknowledge All".
+                     This is critical for medical accountability.
+                ─────────────────────────────────────────────────────────────────── -->
+                <div class="cg-alert-banner" id="cg-alert-banner">
+                    <div class="cg-banner-icon">🚨</div>
+                    <div class="cg-banner-body" id="cg-alert-banner-text">
+                        <strong>⚠️ Unacknowledged Missed-Dose Alerts</strong>
+                        <p style="font-size:0.85rem;margin-top:4px">You have patients with unacknowledged missed doses.
+                            Please review and acknowledge.</p>
+                    </div>
+                    <div class="cg-banner-actions">
+                        <button class="btn btn-danger btn-sm" onclick="acknowledgeAllCgLogs()">✓ Acknowledge
+                            All</button>
+                        <button class="btn btn-outline btn-sm" style="border-color:var(--poor);color:var(--poor)"
+                            onclick="document.querySelector('[data-section=section-my-alerts]').click()">
+                            View Alerts
+                        </button>
+                    </div>
+                </div>
                 <!-- ── Overview ── -->
                 <section class="dashboard-section" id="section-overview">
                     <div class="page-header">
@@ -164,6 +234,27 @@
                         <div class="empty-state">
                             <div class="empty-icon">🔔</div>
                             <p>Loading alerts…</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ── My Received Alerts (Caregiver Alert Log) ── -->
+                <section class="dashboard-section" id="section-my-alerts" style="display:none">
+                    <div class="page-header">
+                        <h2>🚨 My Received Alerts</h2>
+                        <p>All missed-dose alert notifications directed to you. Must be acknowledged for medical
+                            accountability.</p>
+                    </div>
+                    <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
+                        <button class="btn btn-danger" onclick="acknowledgeAllCgLogs()">✓ Acknowledge All</button>
+                        <span style="font-size:0.83rem;color:var(--text-muted)">
+                            ⚠️ Unacknowledged alerts are shown in the red banner at the top of every page.
+                        </span>
+                    </div>
+                    <div id="cg-alert-panel-list">
+                        <div class="empty-state">
+                            <div class="empty-icon">✅</div>
+                            <p>No alerts received yet.</p>
                         </div>
                     </div>
                 </section>

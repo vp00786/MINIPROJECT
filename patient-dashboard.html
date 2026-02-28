@@ -6,21 +6,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Patient Dashboard – AfterHeal</title>
     <meta name="description"
-        content="Track your medication adherence, appointments, missed-dose alerts, and daily health summary.">
+        content="Track medications, appointments, missed-dose alerts, and emergency notification system.">
     <link rel="stylesheet" href="styles/global.css">
     <link rel="stylesheet" href="styles/dashboard.css">
     <style>
         /* ── Patient-specific extras ──────────────────────────── */
-
-        /* Overdue medication card highlight */
         .med-overdue {
             border-left: 3px solid var(--poor) !important;
         }
 
-        /* Overview alert banner */
         .overview-alert-banner {
             display: none;
-            /* shown by JS when doses are overdue */
             align-items: center;
             gap: 14px;
             background: linear-gradient(135deg, #FFF3CD, #FFF9E6);
@@ -63,7 +59,7 @@
             min-width: 180px;
         }
 
-        /* Notification bell in topbar */
+        /* Notification bell */
         .notif-bell-wrap {
             position: relative;
             display: inline-flex;
@@ -76,8 +72,7 @@
             font-size: 1.4rem;
             padding: 4px 6px;
             border-radius: var(--radius-sm);
-            transition: background 0.15s;
-            position: relative;
+            transition: background .15s;
         }
 
         .notif-bell-btn:hover {
@@ -100,7 +95,6 @@
             justify-content: center;
         }
 
-        /* Nav badge (Alerts nav item) */
         .nav-notif-badge {
             display: none;
             background: var(--poor);
@@ -112,7 +106,7 @@
             margin-left: 6px;
         }
 
-        /* Notification feed */
+        /* Notification items */
         .notif-item {
             display: flex;
             align-items: flex-start;
@@ -121,7 +115,6 @@
             border-radius: var(--radius-sm);
             border: 1px solid var(--border);
             margin-bottom: 8px;
-            transition: background 0.15s;
         }
 
         .notif-unread {
@@ -130,7 +123,7 @@
 
         .notif-read {
             background: var(--surface2);
-            opacity: 0.75;
+            opacity: .75;
         }
 
         .notif-icon {
@@ -157,6 +150,79 @@
             flex-wrap: wrap;
         }
 
+        /* Alert tab bar */
+        .alert-tab-bar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .alert-tab-btn {
+            padding: 7px 18px;
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: var(--surface);
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: .15s;
+        }
+
+        .alert-tab-btn.active {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+        }
+
+        /* Alert log entries */
+        .alert-log-entry {
+            display: flex;
+            gap: 14px;
+            padding: 14px 16px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            margin-bottom: 8px;
+            background: var(--surface);
+        }
+
+        .log-unack {
+            border-left: 3px solid var(--poor);
+        }
+
+        .log-ack {
+            opacity: .75;
+        }
+
+        .log-left {
+            font-size: 1.4rem;
+            flex-shrink: 0;
+        }
+
+        .log-body {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .log-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .log-detail {
+            font-size: 0.77rem;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        .log-status-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
         /* Emergency contact cards */
         .ec-card {
             display: flex;
@@ -167,11 +233,16 @@
             border-radius: var(--radius-sm);
             background: var(--surface);
             margin-bottom: 10px;
-            transition: box-shadow 0.15s;
+            transition: box-shadow .15s;
         }
 
         .ec-card:hover {
             box-shadow: var(--shadow-sm);
+        }
+
+        .ec-primary {
+            border-left: 3px solid var(--good);
+            background: linear-gradient(135deg, #F0FFF8, var(--surface));
         }
 
         .ec-avatar {
@@ -195,6 +266,8 @@
             font-weight: 700;
             font-size: 0.95rem;
             margin-bottom: 4px;
+            display: flex;
+            align-items: center;
         }
 
         .ec-meta {
@@ -203,6 +276,35 @@
             align-items: center;
             flex-wrap: wrap;
         }
+
+        /* Phone error */
+        .phone-error {
+            font-size: 0.75rem;
+            margin-top: 3px;
+            min-height: 1.1em;
+        }
+
+        /* Caregiver assignment box */
+        .caregiver-assign-box {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        /* SMS mode indicator */
+        .sms-mode-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.78rem;
+            padding: 4px 12px;
+            border-radius: 99px;
+            background: #E3F0FF;
+            color: #1A6FC4;
+            font-weight: 600;
+        }
     </style>
 </head>
 
@@ -210,7 +312,7 @@
     <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
     <div class="dashboard-shell">
-        <!-- ══ SIDEBAR ═══════════════════════════════════════════════════════ -->
+        <!-- ══ SIDEBAR ═════════════════════════════════════════════════════ -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-logo">
                 <div class="sidebar-logo-icon theme-patient">🏥</div>
@@ -238,7 +340,7 @@
                     <span class="nav-icon">📅</span> Appointments
                 </button>
                 <button class="nav-link" data-section="section-alerts">
-                    <span class="nav-icon">🔔</span> Alerts
+                    <span class="nav-icon">🔔</span> Alerts &amp; Emergency
                     <span class="nav-notif-badge" id="nav-notif-badge"></span>
                 </button>
                 <button class="nav-link" data-section="section-summary">
@@ -250,7 +352,7 @@
             </div>
         </aside>
 
-        <!-- ══ MAIN CONTENT ══════════════════════════════════════════════════ -->
+        <!-- ══ MAIN CONTENT ═════════════════════════════════════════════════ -->
         <div class="main-content">
             <header class="topbar">
                 <div class="topbar-left">
@@ -262,13 +364,11 @@
                 </div>
                 <div class="topbar-right">
                     <div class="topbar-date" id="topbar-date"></div>
-                    <!-- Notification bell -->
                     <div class="notif-bell-wrap">
                         <button class="notif-bell-btn" id="notif-bell-btn" aria-label="Notifications"
                             onclick="document.querySelector('[data-section=section-alerts]').click()"
                             title="View missed-dose alerts">
-                            🔔
-                            <span class="notif-badge" id="notif-badge"></span>
+                            🔔<span class="notif-badge" id="notif-badge"></span>
                         </button>
                     </div>
                     <button class="btn btn-outline btn-sm logout-btn">Logout</button>
@@ -277,26 +377,21 @@
 
             <main class="page-content">
 
-                <!-- ══════════════════════════════════════════════════════════════
-          ── SECTION: OVERVIEW
-        ══════════════════════════════════════════════════════════════ -->
+                <!-- ────────────────────────── OVERVIEW ───────────────────────── -->
                 <section class="dashboard-section" id="section-overview">
                     <div class="page-header">
                         <h2>My Health Overview</h2>
-                        <p>Your medication adherence and appointment summary at a glance.</p>
+                        <p>Medication adherence, today's schedule, and appointment summary at a glance.</p>
                     </div>
 
-                    <!-- Missed-dose alert banner (shown by JS when overdue doses exist) -->
                     <div class="overview-alert-banner" id="overview-alert-banner"></div>
 
-                    <!-- Adherence hero -->
                     <div class="adherence-summary">
                         <div class="pct-big" id="adherence-pct-big">--</div>
                         <div class="pct-label">Overall Adherence Rate</div>
                         <div class="status-pill">Calculating…</div>
                     </div>
 
-                    <!-- Stat cards -->
                     <div class="stats-grid">
                         <div class="stat-card">
                             <div class="stat-icon stat-icon-green">✅</div>
@@ -313,7 +408,7 @@
                             </div>
                         </div>
                         <div class="stat-card">
-                            <div class="stat-icon stat-icon-red" style="background:#FFE5E5">❌</div>
+                            <div class="stat-icon" style="background:#FFE5E5">❌</div>
                             <div class="stat-info">
                                 <div class="stat-value" id="stat-today-missed" style="color:var(--poor)">0</div>
                                 <div class="stat-label">Missed Today</div>
@@ -328,23 +423,18 @@
                         </div>
                     </div>
 
-                    <!-- Adherence insight -->
                     <div class="card-flat mt-16">
                         <h4 class="mb-8">💡 Adherence Insight</h4>
                         <span id="adherence-insight" class="badge badge-primary">Calculating…</span>
                     </div>
                 </section>
 
-                <!-- ══════════════════════════════════════════════════════════════
-          ── SECTION: MEDICATIONS (with doctor filter)
-        ══════════════════════════════════════════════════════════════ -->
+                <!-- ──────────────────────── MEDICATIONS ───────────────────────── -->
                 <section class="dashboard-section" id="section-medications" style="display:none">
                     <div class="page-header">
                         <h2>My Medications</h2>
-                        <p>All prescribed medications. Mark each dose as taken. Filter by prescribing doctor.</p>
+                        <p>All prescribed medications. Mark doses as taken. Filter by prescribing doctor.</p>
                     </div>
-
-                    <!-- Adherence bar -->
                     <div class="card-flat mb-16">
                         <div class="flex-between mb-8">
                             <h4>Overall Adherence</h4>
@@ -354,20 +444,14 @@
                             <div class="progress-bar progress-good" id="adh-bar-main" style="width:0%"></div>
                         </div>
                     </div>
-
-                    <!-- Doctor filter bar -->
-                    <div class="filter-bar" id="med-filter-bar">
+                    <div class="filter-bar">
                         <label for="med-doctor-filter">🏥 Filter by Doctor:</label>
                         <select id="med-doctor-filter" onchange="onMedDoctorFilterChange(this.value)">
                             <option value="">All Doctors</option>
                         </select>
                         <button class="btn btn-ghost btn-sm"
-                            onclick="document.getElementById('med-doctor-filter').value=''; onMedDoctorFilterChange('')">
-                            Clear Filter
-                        </button>
+                            onclick="document.getElementById('med-doctor-filter').value='';onMedDoctorFilterChange('')">Clear</button>
                     </div>
-
-                    <!-- Medication list -->
                     <div id="med-list">
                         <div class="empty-state">
                             <div class="empty-icon">💊</div>
@@ -376,16 +460,12 @@
                     </div>
                 </section>
 
-                <!-- ══════════════════════════════════════════════════════════════
-          ── SECTION: APPOINTMENTS (with doctor filter + categories)
-        ══════════════════════════════════════════════════════════════ -->
+                <!-- ──────────────────────── APPOINTMENTS ──────────────────────── -->
                 <section class="dashboard-section" id="section-appointments" style="display:none">
                     <div class="page-header">
                         <h2>My Appointments</h2>
-                        <p>Upcoming, missed, and completed appointments. Filter by doctor.</p>
+                        <p>Upcoming, missed, and attended appointments. Filter by doctor.</p>
                     </div>
-
-                    <!-- Stats row -->
                     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px">
                         <div class="stat-card">
                             <div class="stat-icon stat-icon-blue">📅</div>
@@ -409,20 +489,14 @@
                             </div>
                         </div>
                     </div>
-
-                    <!-- Doctor filter bar -->
-                    <div class="filter-bar" id="appt-filter-bar">
+                    <div class="filter-bar">
                         <label for="appt-doctor-filter">👨‍⚕️ Filter by Doctor:</label>
                         <select id="appt-doctor-filter" onchange="onApptDoctorFilterChange(this.value)">
                             <option value="">All Doctors</option>
                         </select>
                         <button class="btn btn-ghost btn-sm"
-                            onclick="document.getElementById('appt-doctor-filter').value=''; onApptDoctorFilterChange('')">
-                            Clear Filter
-                        </button>
+                            onclick="document.getElementById('appt-doctor-filter').value='';onApptDoctorFilterChange('')">Clear</button>
                     </div>
-
-                    <!-- Appointment tabs -->
                     <div class="tab-bar" data-tab-container>
                         <button class="tab-btn active" data-tab="tab-upcoming">📅 Upcoming</button>
                         <button class="tab-btn" data-tab="tab-missed">⚠️ Missed</button>
@@ -439,13 +513,11 @@
                     </div>
                 </section>
 
-                <!-- ══════════════════════════════════════════════════════════════
-          ── SECTION: ALERTS (Missed Dose + Emergency Contacts)
-        ══════════════════════════════════════════════════════════════ -->
+                <!-- ──────────────── ALERTS & EMERGENCY SYSTEM ─────────────────── -->
                 <section class="dashboard-section" id="section-alerts" style="display:none">
                     <div class="page-header">
-                        <h2>Alerts &amp; Notifications</h2>
-                        <p>Missed dose alerts with simulated SMS emergency notifications.</p>
+                        <h2>🔔 Alerts &amp; Emergency System</h2>
+                        <p>Missed-dose detection, SMS alert logs, emergency contacts, and caregiver assignment.</p>
                     </div>
 
                     <!-- Stats row -->
@@ -460,42 +532,92 @@
                         <div class="stat-card">
                             <div class="stat-icon" style="background:#FFE5E5">📞</div>
                             <div class="stat-info">
-                                <div class="stat-value" id="stat-ec-count">—</div>
+                                <div class="stat-value" id="stat-ec-count">0</div>
                                 <div class="stat-label">Emergency Contacts</div>
                             </div>
                         </div>
-                    </div>
-
-                    <!-- Notification feed card -->
-                    <div class="card" style="margin-bottom:22px">
-                        <div
-                            style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
-                            <h3>🔔 Notification Feed</h3>
-                            <div style="display:flex;gap:8px">
-                                <button id="btn-mark-all-read" class="btn btn-ghost btn-sm">✓ Mark All Read</button>
-                                <button id="btn-clear-notifs" class="btn btn-danger btn-sm">🗑 Clear All</button>
-                            </div>
-                        </div>
-                        <div id="notif-list">
-                            <div class="empty-state">
-                                <div class="empty-icon">🔔</div>
-                                <p>No notifications yet.<br>Missed doses will appear here automatically.</p>
+                        <div class="stat-card">
+                            <div class="stat-icon" style="background:#E3F0FF">📋</div>
+                            <div class="stat-info">
+                                <div class="stat-value" id="stat-unack-count" style="color:var(--poor)">0</div>
+                                <div class="stat-label">Unacknowledged Logs</div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Emergency contacts card -->
-                    <div class="card">
-                        <h3 style="margin-bottom:16px">📞 Emergency Contacts</h3>
-                        <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:16px">
-                            These contacts receive simulated SMS alerts when you miss a dose.
-                        </p>
+                    <!-- SMS gateway mode indicator -->
+                    <div style="margin-bottom:16px">
+                        <span class="sms-mode-badge">📡 SMS Gateway: Simulation Mode (Twilio/Fast2SMS-ready)</span>
+                        <span style="font-size:0.78rem;color:var(--text-muted);margin-left:10px">
+                            Switch to real SMS by calling <code>AHSmsGateway.setMode('twilio', config)</code> in
+                            console.
+                        </span>
+                    </div>
 
-                        <div id="ec-list" style="margin-bottom:20px"></div>
+                    <!-- Alert sub-tabs: Notifications | Alert History | Emergency Contacts | Caregiver -->
+                    <div class="alert-tab-bar">
+                        <button class="alert-tab-btn active" data-alert-tab="alert-tab-notifs">🔔 Notifications</button>
+                        <button class="alert-tab-btn" data-alert-tab="alert-tab-history">📋 Alert History</button>
+                        <button class="alert-tab-btn" data-alert-tab="alert-tab-contacts">📞 Emergency Contacts</button>
+                        <button class="alert-tab-btn" data-alert-tab="alert-tab-caregiver">🏥 Caregiver</button>
+                    </div>
+
+                    <!-- ── Tab: Notifications ── -->
+                    <div class="alert-tab-panel" id="alert-tab-notifs">
+                        <div class="card">
+                            <div
+                                style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+                                <h3>Notification Feed</h3>
+                                <div style="display:flex;gap:8px">
+                                    <button id="btn-mark-all-read" class="btn btn-ghost btn-sm">✓ Mark All Read</button>
+                                    <button id="btn-clear-notifs" class="btn btn-danger btn-sm">🗑 Clear All</button>
+                                </div>
+                            </div>
+                            <div id="notif-list">
+                                <div class="empty-state">
+                                    <div class="empty-icon">🔔</div>
+                                    <p>No notifications yet. Missed doses trigger alerts automatically.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── Tab: Alert History (Audit Trail) ── -->
+                    <div class="alert-tab-panel" id="alert-tab-history" style="display:none">
+                        <div class="card">
+                            <div
+                                style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+                                <div>
+                                    <h3>Alert History &amp; Audit Trail</h3>
+                                    <p style="font-size:0.83rem;color:var(--text-muted);margin-top:4px">
+                                        Full log of every SMS alert sent. Required for medical accountability.
+                                    </p>
+                                </div>
+                                <button id="btn-ack-all-logs" class="btn btn-ghost btn-sm">✓ Acknowledge All</button>
+                            </div>
+                            <div id="alert-history-list">
+                                <div class="empty-state">
+                                    <div class="empty-icon">📋</div>
+                                    <p>No alert history yet.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── Tab: Emergency Contacts ── -->
+                    <div class="alert-tab-panel" id="alert-tab-contacts" style="display:none">
+                        <div class="card" style="margin-bottom:20px">
+                            <h3 style="margin-bottom:8px">📞 Emergency Contacts</h3>
+                            <p style="font-size:0.83rem;color:var(--text-muted);margin-bottom:16px">
+                                Contacts receive SMS alerts when you miss a dose. Mark one as <strong>Primary</strong>
+                                for priority notification.
+                            </p>
+                            <div id="ec-list"></div>
+                        </div>
 
                         <!-- Add contact form -->
-                        <div style="border-top:1px solid var(--border);padding-top:16px">
-                            <h4 style="margin-bottom:14px">➕ Add Emergency Contact</h4>
+                        <div class="card">
+                            <h4 style="margin-bottom:14px">➕ Add New Emergency Contact</h4>
                             <form id="ec-add-form" novalidate>
                                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
                                     <div class="form-group">
@@ -504,63 +626,106 @@
                                             placeholder="e.g. Mary Johnson" required>
                                     </div>
                                     <div class="form-group">
-                                        <label class="form-label">Relation</label>
+                                        <label class="form-label">Relationship</label>
                                         <input id="ec-relation" type="text" class="form-control"
-                                            placeholder="e.g. Mother, Spouse">
+                                            placeholder="e.g. Mother, Spouse, Sibling">
                                     </div>
                                 </div>
                                 <div class="form-group">
-                                    <label class="form-label">Phone Number <span class="text-poor">*</span></label>
-                                    <input id="ec-phone" type="tel" class="form-control" placeholder="e.g. +1-555-0101"
-                                        required>
+                                    <label class="form-label">Phone Number <span class="text-poor">*</span>
+                                        <span style="font-size:0.75rem;color:var(--text-muted);font-weight:400"> (E.g.
+                                            +1-555-0101 or +919876543210)</span>
+                                    </label>
+                                    <input id="ec-phone" type="tel" class="form-control" placeholder="+1-555-0101"
+                                        required autocomplete="tel">
+                                    <div class="phone-error" id="ec-phone-error"></div>
                                 </div>
-                                <button type="submit" class="btn btn-primary">📞 Add Contact</button>
+                                <div class="form-group" style="display:flex;align-items:center;gap:10px">
+                                    <input type="checkbox" id="ec-primary" style="width:16px;height:16px">
+                                    <label for="ec-primary" style="font-size:0.88rem;cursor:pointer">
+                                        Set as <strong>Primary Contact</strong> (notified first)
+                                    </label>
+                                </div>
+                                <button type="submit" class="btn btn-primary">📞 Add Emergency Contact</button>
                             </form>
+                        </div>
+                    </div>
+
+                    <!-- ── Tab: Caregiver Assignment ── -->
+                    <div class="alert-tab-panel" id="alert-tab-caregiver" style="display:none">
+                        <div class="card">
+                            <h3 style="margin-bottom:8px">🏥 Assign Caregiver</h3>
+                            <p style="font-size:0.83rem;color:var(--text-muted);margin-bottom:16px">
+                                Your assigned caregiver receives automatic SMS alerts and in-app notifications when you
+                                miss a dose.
+                            </p>
+
+                            <div class="caregiver-assign-box">
+                                <div style="margin-bottom:12px;font-weight:600;font-size:0.88rem">Currently Assigned:
+                                </div>
+                                <div id="assigned-caregiver-display">
+                                    <span style="color:var(--text-muted);font-size:0.85rem">No caregiver assigned
+                                        yet.</span>
+                                </div>
+                            </div>
+
+                            <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+                                <div class="form-group" style="flex:1;min-width:200px;margin-bottom:0">
+                                    <label class="form-label">Select Caregiver</label>
+                                    <select id="caregiver-assign-select" class="form-control">
+                                        <option value="">No Caregiver Assigned</option>
+                                    </select>
+                                </div>
+                                <button id="btn-assign-caregiver" class="btn btn-primary">Assign Caregiver</button>
+                            </div>
+
+                            <div
+                                style="margin-top:20px;padding:14px;background:var(--surface2);border-radius:var(--radius-sm);font-size:0.83rem;color:var(--text-muted)">
+                                <strong>How it works:</strong><br>
+                                When you miss a dose (>30 min past scheduled time), AfterHeal automatically:
+                                <ol style="margin:8px 0 0 16px;line-height:1.7">
+                                    <li>Records a missed-dose notification in your alerts feed</li>
+                                    <li>Sends an SMS to all emergency contacts</li>
+                                    <li>Sends an SMS and in-app alert to your assigned caregiver</li>
+                                    <li>Logs all actions in Alert History for medical accountability</li>
+                                </ol>
+                            </div>
                         </div>
                     </div>
                 </section>
 
-                <!-- ══════════════════════════════════════════════════════════════
-          ── SECTION: DAILY SUMMARY
-        ══════════════════════════════════════════════════════════════ -->
+                <!-- ──────────────────────── DAILY SUMMARY ─────────────────────── -->
                 <section class="dashboard-section" id="section-summary" style="display:none">
                     <div class="page-header">
                         <h2>Daily Summary</h2>
-                        <p>Your adherence breakdown and personalised health insights.</p>
+                        <p>Adherence breakdown and personalised health insights.</p>
                     </div>
-
                     <div class="adherence-summary">
                         <div class="pct-big" id="adh-pct-big2">--%</div>
                         <div class="pct-label">Overall Adherence</div>
                         <div class="status-pill" id="summary-status-pill">Calculating…</div>
                     </div>
-
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
                         <div class="card">
                             <h4 class="mb-12">Today's Progress</h4>
-                            <div style="display:flex;justify-content:space-between;margin-bottom:8px">
-                                <span style="font-size:0.88rem;color:var(--text-secondary)">Doses Taken</span>
-                                <span class="fw-700 text-good" id="sum-taken">-</span>
-                            </div>
-                            <div style="display:flex;justify-content:space-between;margin-bottom:8px">
-                                <span style="font-size:0.88rem;color:var(--text-secondary)">Doses Missed</span>
-                                <span class="fw-700 text-poor" id="sum-missed">-</span>
-                            </div>
-                            <div style="display:flex;justify-content:space-between">
-                                <span style="font-size:0.88rem;color:var(--text-secondary)">Upcoming</span>
-                                <span class="fw-700 text-moderate" id="sum-upcoming">-</span>
-                            </div>
+                            <div style="display:flex;justify-content:space-between;margin-bottom:8px"><span
+                                    style="font-size:0.88rem;color:var(--text-secondary)">Doses Taken</span><span
+                                    class="fw-700 text-good" id="sum-taken">-</span></div>
+                            <div style="display:flex;justify-content:space-between;margin-bottom:8px"><span
+                                    style="font-size:0.88rem;color:var(--text-secondary)">Doses Missed</span><span
+                                    class="fw-700 text-poor" id="sum-missed">-</span></div>
+                            <div style="display:flex;justify-content:space-between"><span
+                                    style="font-size:0.88rem;color:var(--text-secondary)">Upcoming</span><span
+                                    class="fw-700 text-moderate" id="sum-upcoming">-</span></div>
                         </div>
                         <div class="card">
                             <h4 class="mb-12">Status Indicator</h4>
                             <div style="font-size:3rem;text-align:center;margin-bottom:8px" id="sum-emoji">📊</div>
                             <div style="text-align:center;font-weight:700;font-size:1.1rem" id="sum-label">-</div>
-                            <div style="text-align:center;margin-top:8px">
-                                <span id="adherence-insight2" class="badge badge-primary">-</span>
-                            </div>
+                            <div style="text-align:center;margin-top:8px"><span id="adherence-insight2"
+                                    class="badge badge-primary">-</span></div>
                         </div>
                     </div>
-
                     <div class="card">
                         <h4 class="mb-16">Adherence Scale</h4>
                         <div style="display:flex;gap:12px;flex-wrap:wrap">
@@ -587,24 +752,61 @@
                 </section>
 
             </main>
-        </div><!-- end .main-content -->
-    </div><!-- end .dashboard-shell -->
+        </div>
+    </div>
+
+    <!-- ── Edit Emergency Contact Modal ── -->
+    <div class="modal-overlay" id="ec-edit-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>✏️ Edit Emergency Contact</h3>
+                <button class="modal-close" onclick="closeEditModal()">&#x2715;</button>
+            </div>
+            <form id="ec-edit-form" novalidate>
+                <input type="hidden" id="ec-edit-id">
+                <input type="hidden" id="ec-edit-pid">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+                    <div class="form-group">
+                        <label class="form-label">Full Name <span class="text-poor">*</span></label>
+                        <input id="ec-edit-name" type="text" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Relationship</label>
+                        <input id="ec-edit-relation" type="text" class="form-control">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Phone Number <span class="text-poor">*</span></label>
+                    <input id="ec-edit-phone" type="tel" class="form-control" autocomplete="tel">
+                    <div class="phone-error" id="ec-edit-phone-error"></div>
+                </div>
+                <div class="form-group" style="display:flex;align-items:center;gap:10px">
+                    <input type="checkbox" id="ec-edit-primary" style="width:16px;height:16px">
+                    <label for="ec-edit-primary" style="font-size:0.88rem;cursor:pointer">Set as <strong>Primary
+                            Contact</strong></label>
+                </div>
+                <div style="display:flex;gap:10px">
+                    <button type="submit" class="btn btn-primary flex-1">💾 Save Changes</button>
+                    <button type="button" class="btn btn-ghost" onclick="closeEditModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <script src="scripts/auth.js"></script>
     <script src="scripts/notifications.js"></script>
     <script src="scripts/patient.js"></script>
     <script>
-        /** Wire up Appointments tab-bar (Upcoming / Missed / Attended) */
         document.addEventListener('DOMContentLoaded', () => {
             AH.initTabs();
-
-            /* Update EC count stat after load */
-            setTimeout(() => {
-                const contacts = AH.getItem(AH.KEYS.EMERGENCY_CONTACTS)
-                    .filter(c => c.patientId === (AH.getSession()?.userId));
-                const el = document.getElementById('stat-ec-count');
-                if (el) el.textContent = contacts.length;
-            }, 200);
+            // Initialize alert history tab on first open
+            document.querySelector('[data-section="section-alerts"]')?.addEventListener('click', () => {
+                setTimeout(() => {
+                    if (window.AHNotif && AH.getSession()) {
+                        AHNotif.renderAlertHistory(AH.getSession().userId);
+                    }
+                }, 80);
+            });
         });
     </script>
 </body>

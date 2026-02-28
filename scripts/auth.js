@@ -11,9 +11,11 @@ const KEYS = {
     DOSES: 'ah_doses',
     APPOINTMENTS: 'ah_appointments',
     SUPPORT_LOG: 'ah_support_log',
-    DOCUMENTS: 'ah_documents',          // Patient medical documents (view-only for doctors)
-    EMERGENCY_CONTACTS: 'ah_emergency_contacts',  // Patient emergency contacts
-    NOTIFICATIONS: 'ah_notifications',       // Missed-dose & system notifications
+    DOCUMENTS: 'ah_documents',           // Patient medical documents (view-only for doctors)
+    EMERGENCY_CONTACTS: 'ah_emergency_contacts',   // Patient emergency contacts
+    NOTIFICATIONS: 'ah_notifications',        // Missed-dose & system notifications
+    ALERT_LOGS: 'ah_alert_logs',            // Full audit trail of all alerts sent
+    CAREGIVER_ASSIGNMENT: 'ah_caregiver_assignment',  // Patient → caregiver assignment map
     SEEDED: 'ah_seeded',
 };
 
@@ -112,6 +114,12 @@ function seedDemoData() {
 
     // Start with empty notification store (notifications.js will populate on missed doses)
     setItem(KEYS.NOTIFICATIONS, []);
+
+    // Alert logs audit trail
+    setItem(KEYS.ALERT_LOGS, []);
+
+    // Caregiver assignment: {patientId: caregiverId}
+    setItem(KEYS.CAREGIVER_ASSIGNMENT, {});
 
     localStorage.setItem(KEYS.SEEDED, 'true');
     console.log('[AfterHeal] Demo data seeded ✓');
